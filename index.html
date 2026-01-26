@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>衡點健身 - 教練課表寫入系統</title>
+    <title>衡點健康 - 教練課表寫入系統</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
@@ -3051,14 +3051,16 @@
                 // 防抖處理
                 clearTimeout(searchTimeout);
                 
-                if (query.length < 1) {
+                // 至少輸入 2 個字才搜尋
+                if (query.length < 2) {
                     searchResults.classList.remove('show');
                     return;
                 }
                 
+                // 延長防抖時間到 500ms
                 searchTimeout = setTimeout(() => {
                     searchMembers(query);
-                }, 300);
+                }, 500);
             });
             
             // 點擊外部關閉搜尋結果
@@ -3070,7 +3072,7 @@
             
             // 焦點時顯示結果（如果有輸入）
             searchInput.addEventListener('focus', function() {
-                if (this.value.trim().length >= 1 && searchResults.innerHTML) {
+                if (this.value.trim().length >= 2 && searchResults.innerHTML) {
                     searchResults.classList.add('show');
                 }
             });
@@ -3323,7 +3325,7 @@
             const searchInput = document.getElementById('memberSearch');
             searchInput.disabled = false;
             searchInput.value = '';
-            searchInput.placeholder = '輸入會員編號或姓名搜尋...';
+            searchInput.placeholder = '輸入會員編號或姓名搜尋（至少2字）...';
             
             document.getElementById('memberInfoCard').classList.remove('show');
         }
