@@ -2853,9 +2853,10 @@
         
         // 課種對應
         const CLASS_TYPE_INFO = {
-            weight: { name: '重訓', icon: '🏋️' },
+            ai_analysis: { name: 'AI分析', icon: '🤖' },
             pilates: { name: '皮拉提斯', icon: '🧘' },
-            stretch: { name: '伸展', icon: '💆' }
+            strength_training: { name: '重量訓練', icon: '🏋️' },
+            stretching: { name: '伸展', icon: '💆' }
         };
         
         // 皮拉提斯輔具選項（啞鈴單獨處理）
@@ -2923,7 +2924,7 @@
         async function initDebugMode() {
             // 模擬教練資料 - 從 URL 參數取得課種
             const urlParams = new URLSearchParams(window.location.search);
-            const typeFromUrl = urlParams.get('type') || 'weight'; // 預設重訓
+            const typeFromUrl = urlParams.get('type') || 'strength_training'; // 預設重量訓練
             
             currentCoach = {
                 id: 1,
@@ -3018,7 +3019,7 @@
             });
             
             switch (classType) {
-                case 'weight':
+                case 'strength_training':
                     document.getElementById('weightTraining').classList.add('active');
                     addWeightExercise(); // 預設新增一個動作
                     break;
@@ -3026,7 +3027,7 @@
                     document.getElementById('pilatesTraining').classList.add('active');
                     addPilatesExercise(); // 預設新增一個動作
                     break;
-                case 'stretch':
+                case 'stretching':
                     document.getElementById('stretchTraining').classList.add('active');
                     break;
             }
@@ -4051,13 +4052,13 @@
             
             // 根據課種收集訓練內容
             switch (coachClassType) {
-                case 'weight':
+                case 'strength_training':
                     data.trainingDetails = collectWeightTrainingData();
                     break;
                 case 'pilates':
                     data.trainingDetails = collectPilatesTrainingData();
                     break;
-                case 'stretch':
+                case 'stretching':
                     data.trainingDetails = collectStretchData();
                     break;
             }
@@ -4248,7 +4249,7 @@
             }
             
             // 伸展課程額外驗證
-            if (coachClassType === 'stretch') {
+            if (coachClassType === 'stretching') {
                 if (!document.querySelector('.duration-btn.active')) {
                     showToast('請選擇課程長度', 'error');
                     return false;
@@ -4322,7 +4323,7 @@
             // 重置重訓區塊
             document.getElementById('weightExerciseList').innerHTML = '';
             weightExerciseCount = 0;
-            if (coachClassType === 'weight') addWeightExercise();
+            if (coachClassType === 'strength_training') addWeightExercise();
             
             // 重置皮拉提斯區塊
             document.getElementById('pilatesExerciseList').innerHTML = '';
