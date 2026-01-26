@@ -1,0 +1,4459 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>衡點健身 - 教練課表寫入系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        :root {
+            /* 品牌配色 */
+            --white: #ffffff;
+            --gray: #808080;
+            --gray-light: #f5f5f5;
+            --gray-dark: #333333;
+            
+            --green: #7ac19a;
+            --green-light: #e2ede6;
+            --green-dark: #5f846f;
+            
+            --pink: #f2ac98;
+            --pink-light: #faece8;
+            --pink-dark: #c67566;
+            
+            --yellow: #ffe08b;
+            --yellow-light: #fcf4e3;
+            --yellow-dark: #ba9e60;
+            
+            --blue: #9fcccc;
+            --blue-light: #daedec;
+            --blue-dark: #66888e;
+            
+            /* 功能色 */
+            --success: var(--green);
+            --warning: var(--yellow);
+            --danger: var(--pink-dark);
+            --info: var(--blue);
+            
+            /* 間距 */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            
+            /* 圓角 */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-full: 9999px;
+            
+            /* 陰影 */
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.15);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, var(--green-light) 0%, var(--white) 50%, var(--blue-light) 100%);
+            min-height: 100vh;
+            color: var(--gray-dark);
+            padding-bottom: 100px;
+        }
+        
+        /* 載入畫面 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--white);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loading-logo {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--spacing-lg);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .loading-logo span {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--white);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .loading-text {
+            color: var(--gray);
+            font-size: 14px;
+        }
+        
+        /* 頂部導航 */
+        .header {
+            background: var(--white);
+            padding: var(--spacing-md);
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+        
+        .header-logo {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .header-logo span {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--white);
+        }
+        
+        .header-info {
+            flex: 1;
+        }
+        
+        .header-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--gray-dark);
+        }
+        
+        .header-subtitle {
+            font-size: 12px;
+            color: var(--gray);
+            margin-top: 2px;
+        }
+        
+        .coach-info {
+            text-align: right;
+        }
+        
+        .coach-badge {
+            background: var(--green-light);
+            color: var(--green-dark);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+        }
+        
+        .coach-class-type {
+            font-size: 11px;
+            color: var(--gray);
+            margin-top: 4px;
+        }
+        
+        /* 主容器 */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: var(--spacing-md);
+        }
+        
+        /* 卡片 */
+        .card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .card-icon.green { background: var(--green-light); }
+        .card-icon.pink { background: var(--pink-light); }
+        .card-icon.yellow { background: var(--yellow-light); }
+        .card-icon.blue { background: var(--blue-light); }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gray-dark);
+        }
+        
+        /* 表單元素 */
+        .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-dark);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .form-label .required {
+            color: var(--pink-dark);
+            margin-left: 4px;
+        }
+        
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: var(--spacing-md);
+            border: 2px solid var(--gray-light);
+            border-radius: var(--radius-md);
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: var(--white);
+        }
+        
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--green);
+            box-shadow: 0 0 0 4px rgba(122, 193, 154, 0.2);
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .form-select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23808080' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 40px;
+        }
+        
+        /* 搜尋輸入框容器 */
+        .search-container {
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: var(--spacing-md);
+            padding-left: 44px;
+            border: 2px solid var(--gray-light);
+            border-radius: var(--radius-md);
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: var(--white);
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--green);
+            box-shadow: 0 0 0 4px rgba(122, 193, 154, 0.2);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+            font-size: 18px;
+            pointer-events: none;
+        }
+        
+        .search-clear {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: var(--gray-light);
+            color: var(--gray);
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .search-clear.show {
+            display: flex;
+        }
+        
+        /* 搜尋結果下拉 */
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            border: 2px solid var(--green);
+            border-top: none;
+            border-radius: 0 0 var(--radius-md) var(--radius-md);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 50;
+            display: none;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .search-results.show {
+            display: block;
+        }
+        
+        .search-result-item {
+            padding: var(--spacing-md);
+            cursor: pointer;
+            border-bottom: 1px solid var(--gray-light);
+            transition: background 0.2s ease;
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .search-result-item:hover {
+            background: var(--green-light);
+        }
+        
+        .search-result-item .member-id {
+            font-weight: 600;
+            color: var(--green-dark);
+            margin-right: var(--spacing-sm);
+        }
+        
+        .search-result-item .member-name {
+            color: var(--gray-dark);
+        }
+        
+        .search-result-item .member-birthday {
+            color: var(--gray);
+            font-size: 13px;
+            margin-left: var(--spacing-sm);
+        }
+        
+        .search-no-result {
+            padding: var(--spacing-lg);
+            text-align: center;
+            color: var(--gray);
+        }
+        
+        .search-loading {
+            padding: var(--spacing-lg);
+            text-align: center;
+            color: var(--gray);
+        }
+        
+        /* 學員資訊卡 */
+        .member-info-card {
+            background: var(--green-light);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            margin-top: var(--spacing-md);
+            display: none;
+        }
+        
+        .member-info-card.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .member-info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .member-info-title {
+            font-weight: 600;
+            color: var(--green-dark);
+        }
+        
+        .member-info-clear {
+            background: none;
+            border: none;
+            color: var(--gray);
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        
+        .member-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-sm);
+        }
+        
+        .member-info-item {
+            font-size: 14px;
+        }
+        
+        .member-info-item label {
+            color: var(--gray);
+            display: block;
+            font-size: 12px;
+        }
+        
+        .member-info-item span {
+            color: var(--gray-dark);
+            font-weight: 500;
+        }
+        
+        .member-disease-alert {
+            margin-top: var(--spacing-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--pink-light);
+            border-radius: var(--radius-sm);
+            border-left: 4px solid var(--pink-dark);
+        }
+        
+        .member-disease-alert label {
+            color: var(--pink-dark);
+            font-size: 12px;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .member-disease-alert span {
+            color: var(--gray-dark);
+            font-size: 14px;
+        }
+        
+        /* MOTI/InBody 歷程按鈕 */
+        .moti-history-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+            margin-top: var(--spacing-md);
+            background: linear-gradient(135deg, var(--blue-light), var(--green-light));
+            border: 1px solid var(--blue);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .moti-history-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(159, 204, 204, 0.4);
+        }
+        
+        .moti-history-btn .moti-icon {
+            font-size: 20px;
+        }
+        
+        .moti-history-btn span:nth-child(2) {
+            flex: 1;
+            text-align: left;
+            font-weight: 600;
+            color: var(--blue-dark);
+        }
+        
+        .moti-history-btn .moti-arrow {
+            font-size: 20px;
+            color: var(--blue-dark);
+        }
+        
+        /* 彈窗樣式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: var(--spacing-md);
+        }
+        
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-container {
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            transform: translateY(20px) scale(0.95);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-overlay.show .modal-container {
+            transform: translateY(0) scale(1);
+        }
+        
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: linear-gradient(135deg, var(--blue), var(--green));
+            color: var(--white);
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--white);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s ease;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--spacing-lg);
+        }
+        
+        .modal-member-info {
+            text-align: center;
+            padding-bottom: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--gray-light);
+        }
+        
+        .modal-member-info .name {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+        
+        .modal-member-info .id {
+            font-size: 13px;
+            color: var(--gray);
+        }
+        
+        /* 標籤切換 */
+        .modal-tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .modal-tab {
+            flex: 1;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 2px solid var(--gray-light);
+            background: var(--white);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray);
+            transition: all 0.3s ease;
+        }
+        
+        .modal-tab:hover {
+            border-color: var(--blue);
+            color: var(--blue-dark);
+        }
+        
+        .modal-tab.active {
+            background: var(--blue);
+            border-color: var(--blue);
+            color: var(--white);
+        }
+        
+        .modal-tab-content {
+            display: none;
+        }
+        
+        .modal-tab-content.active {
+            display: block;
+        }
+        
+        /* 時間線載入與空狀態 */
+        .moti-timeline-loading, .moti-timeline-empty {
+            text-align: center;
+            padding: var(--spacing-xl);
+            color: var(--gray);
+        }
+        
+        .moti-timeline-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .moti-timeline-empty span {
+            font-size: 40px;
+            display: block;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .moti-timeline-empty p {
+            margin: 0;
+            font-size: 14px;
+        }
+        
+        .spinner-small {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--gray-light);
+            border-top-color: var(--blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        /* 時間線樣式 */
+        .moti-timeline {
+            position: relative;
+            padding-left: 24px;
+        }
+        
+        .moti-timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 12px;
+            bottom: 12px;
+            width: 3px;
+            background: linear-gradient(to bottom, var(--green), var(--blue));
+            border-radius: 2px;
+        }
+        
+        .moti-timeline-item {
+            position: relative;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .moti-timeline-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .moti-timeline-dot {
+            position: absolute;
+            left: -24px;
+            top: 14px;
+            width: 16px;
+            height: 16px;
+            background: var(--white);
+            border: 3px solid var(--blue);
+            border-radius: 50%;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+        
+        .moti-timeline-item:first-child .moti-timeline-dot {
+            border-color: var(--green);
+            background: var(--green);
+        }
+        
+        .moti-timeline-item.active .moti-timeline-dot {
+            transform: scale(1.2);
+            box-shadow: 0 0 0 4px rgba(159, 204, 204, 0.3);
+        }
+        
+        .moti-timeline-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--spacing-md);
+            background: var(--gray-light);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .moti-timeline-header:hover {
+            background: var(--blue-light);
+        }
+        
+        .moti-timeline-item.active .moti-timeline-header {
+            background: var(--blue-light);
+            border: 2px solid var(--blue);
+        }
+        
+        .moti-timeline-item:first-child .moti-timeline-header:hover,
+        .moti-timeline-item:first-child.active .moti-timeline-header {
+            background: var(--green-light);
+            border-color: var(--green);
+        }
+        
+        .moti-timeline-date {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .moti-timeline-date .date {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+        
+        .moti-timeline-date .badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            background: var(--green);
+            color: var(--white);
+            border-radius: 10px;
+        }
+        
+        .moti-timeline-summary {
+            font-size: 12px;
+            color: var(--gray);
+        }
+        
+        .moti-timeline-arrow {
+            font-size: 16px;
+            color: var(--gray);
+            transition: transform 0.3s ease;
+        }
+        
+        .moti-timeline-item.active .moti-timeline-arrow {
+            transform: rotate(90deg);
+        }
+        
+        /* 詳細內容（展開式） */
+        .moti-timeline-detail {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+        
+        .moti-timeline-item.active .moti-timeline-detail {
+            max-height: 1200px;
+        }
+        
+        .moti-detail-content {
+            padding: var(--spacing-md);
+            margin-top: var(--spacing-sm);
+            background: var(--white);
+            border: 1px solid var(--gray-light);
+            border-radius: var(--radius-md);
+        }
+        
+        /* MOTI 圖片 */
+        .moti-image-section {
+            margin-bottom: var(--spacing-md);
+            text-align: center;
+        }
+        
+        .moti-image-container {
+            display: inline-block;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 2px solid var(--gray-light);
+            background: var(--gray-light);
+        }
+        
+        .moti-image-container img {
+            display: block;
+            max-width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+        }
+        
+        /* InBody 圖片（報告通常較長） */
+        .moti-image-container.inbody img {
+            max-height: 280px;
+        }
+        
+        .moti-image-placeholder {
+            width: 150px;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray);
+            font-size: 12px;
+        }
+        
+        .moti-image-placeholder span {
+            font-size: 48px;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .moti-detail-section {
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .moti-detail-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .moti-detail-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--blue-dark);
+            margin-bottom: var(--spacing-sm);
+            padding-bottom: var(--spacing-xs);
+            border-bottom: 1px dashed var(--gray-light);
+        }
+        
+        .moti-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        
+        .moti-detail-item {
+            background: var(--gray-light);
+            padding: 10px;
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+        
+        .moti-detail-item label {
+            font-size: 10px;
+            color: var(--gray);
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        .moti-detail-item span {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+        
+        .moti-detail-item.highlight {
+            background: var(--yellow-light);
+        }
+        
+        .moti-detail-item.full-width {
+            grid-column: span 3;
+            text-align: left;
+        }
+        
+        .moti-posture-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .moti-posture-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: var(--gray-light);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+        }
+        
+        .moti-posture-item label {
+            color: var(--gray);
+        }
+        
+        .moti-posture-item span {
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+        
+        .moti-posture-item.warning span {
+            color: var(--pink-dark);
+        }
+        
+        .moti-muscle-section {
+            margin-top: var(--spacing-sm);
+        }
+        
+        .moti-muscle-label {
+            font-size: 11px;
+            color: var(--gray);
+            margin-bottom: 6px;
+        }
+        
+        .moti-muscle-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        .moti-muscle-tag {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .moti-muscle-tag.tight {
+            background: var(--pink-light);
+            color: var(--pink-dark);
+        }
+        
+        .moti-muscle-tag.weak {
+            background: var(--yellow-light);
+            color: #b8860b;
+        }
+        
+        .moti-notes {
+            padding: 10px 14px;
+            background: var(--blue-light);
+            border-left: 3px solid var(--blue);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            color: var(--gray-dark);
+        }
+        
+        /* 課種標籤 */
+        .class-type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--green);
+            color: var(--white);
+            border-radius: var(--radius-md);
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .class-type-badge .icon {
+            font-size: 20px;
+        }
+        
+        /* 訓練內容區塊 */
+        .training-section {
+            display: none;
+        }
+        
+        .training-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        /* 訓練動作項目 */
+        .exercise-item {
+            background: var(--gray-light);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+            position: relative;
+        }
+        
+        .exercise-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .exercise-number {
+            background: var(--green);
+            color: var(--white);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        
+        .exercise-delete {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--pink-light);
+            color: var(--pink-dark);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .exercise-delete:hover {
+            background: var(--pink-dark);
+            color: var(--white);
+        }
+        
+        .exercise-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-sm);
+        }
+        
+        .exercise-grid.cols-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        
+        .exercise-grid.cols-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        
+        .exercise-grid .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        /* 組數項目 */
+        .set-item {
+            background: var(--white);
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .set-number {
+            background: var(--blue-light);
+            color: var(--blue-dark);
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .set-inputs {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex: 1;
+            flex-wrap: wrap;
+        }
+        
+        .set-input-group {
+            flex: 1;
+            min-width: 70px;
+        }
+        
+        .set-input-group label {
+            font-size: 10px;
+            color: var(--gray);
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        .set-input-group input, .set-input-group select {
+            width: 100%;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border: 1px solid var(--gray-light);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+        }
+        
+        .set-delete {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            color: var(--gray);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
+        .set-delete:hover {
+            color: var(--pink-dark);
+        }
+        
+        /* 星星評分 */
+        /* 星星評分（支持半星，完整星星顯示） */
+        .star-rating {
+            display: inline-flex;
+            direction: ltr;
+        }
+        
+        .star-rating .star {
+            position: relative;
+            cursor: pointer;
+            font-size: 24px;
+            color: var(--gray-light);
+            width: 1.2em;
+            text-align: center;
+            user-select: none;
+        }
+        
+        .star-rating .star::before {
+            content: '★';
+        }
+        
+        .star-rating .star.full {
+            color: var(--yellow);
+        }
+        
+        .star-rating .star.half {
+            color: var(--gray-light);
+        }
+        
+        .star-rating .star.half::after {
+            content: '★';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 50%;
+            overflow: hidden;
+            color: var(--yellow);
+        }
+        
+        .star-rating input {
+            display: none;
+        }
+        
+        .star-rating-10 .star {
+            font-size: 20px;
+        }
+        
+        /* 小型星星評分（用於組數內，支持半星） */
+        .star-rating-mini {
+            display: inline-flex;
+            direction: ltr;
+        }
+        
+        .star-rating-mini .star {
+            position: relative;
+            cursor: pointer;
+            font-size: 16px;
+            color: var(--gray-light);
+            width: 1.1em;
+            text-align: center;
+            user-select: none;
+        }
+        
+        .star-rating-mini .star::before {
+            content: '★';
+        }
+        
+        .star-rating-mini .star.full {
+            color: var(--yellow);
+        }
+        
+        .star-rating-mini .star.half {
+            color: var(--gray-light);
+        }
+        
+        .star-rating-mini .star.half::after {
+            content: '★';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 50%;
+            overflow: hidden;
+            color: var(--yellow);
+        }
+        
+        /* 器材其他輸入框 */
+        .equipment-other-input {
+            margin-top: var(--spacing-sm);
+            display: none;
+        }
+        
+        .equipment-other-input.show {
+            display: block;
+        }
+        
+        /* 新增按鈕 */
+        .add-btn {
+            width: 100%;
+            padding: var(--spacing-md);
+            border: 2px dashed var(--gray);
+            border-radius: var(--radius-md);
+            background: transparent;
+            color: var(--gray);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .add-btn:hover {
+            border-color: var(--green);
+            color: var(--green);
+            background: var(--green-light);
+        }
+        
+        /* 多選群組 */
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+        }
+        
+        .checkbox-item {
+            position: relative;
+        }
+        
+        .checkbox-item input {
+            display: none;
+        }
+        
+        .checkbox-item label {
+            display: inline-block;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--gray-light);
+            border-radius: var(--radius-full);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .checkbox-item input:checked + label {
+            background: var(--green);
+            color: var(--white);
+        }
+        
+        /* 單選群組 */
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+        }
+        
+        .radio-item {
+            position: relative;
+        }
+        
+        .radio-item input {
+            display: none;
+        }
+        
+        .radio-item label {
+            display: inline-block;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--gray-light);
+            border-radius: var(--radius-full);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .radio-item input:checked + label {
+            background: var(--green);
+            color: var(--white);
+        }
+        
+        /* Toggle 開關 */
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--spacing-md);
+            background: var(--gray-light);
+            border-radius: var(--radius-md);
+        }
+        
+        .toggle-label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 28px;
+        }
+        
+        .toggle-switch input {
+            display: none;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--gray);
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-slider:before {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            left: 3px;
+            bottom: 3px;
+            background: var(--white);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--pink-dark);
+        }
+        
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+        
+        /* 底部按鈕 */
+        .bottom-actions {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            padding: var(--spacing-md);
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        
+        .bottom-actions-content {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+        
+        .btn {
+            flex: 1;
+            padding: var(--spacing-md);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary {
+            background: var(--gray-light);
+            color: var(--gray-dark);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--gray);
+            color: var(--white);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+            color: var(--white);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-primary:disabled {
+            background: var(--gray);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Toast 提示 */
+        .toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--gray-dark);
+            color: var(--white);
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        .toast.success {
+            background: var(--green-dark);
+        }
+        
+        .toast.error {
+            background: var(--pink-dark);
+        }
+        
+        /* 輔具多選網格 */
+        .accessories-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--spacing-sm);
+        }
+        
+        /* 輔具項目（含重量輸入） - 啞鈴 */
+        .accessory-with-input {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        
+        .accessory-with-input label {
+            flex: 1;
+            display: block;
+            padding: var(--spacing-sm);
+            background: var(--gray-light);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .accessory-with-input input[type="checkbox"]:checked + label {
+            background: var(--blue);
+            color: var(--white);
+        }
+        
+        .accessory-weight-input {
+            width: 50px;
+            padding: var(--spacing-sm);
+            border: 1px solid var(--gray-light);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            text-align: center;
+            background: var(--white);
+            flex-shrink: 0;
+        }
+        
+        .accessory-weight-input:disabled {
+            background: var(--gray-light);
+            color: var(--gray);
+        }
+        
+        .accessory-weight-input:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+        
+        .accessory-item {
+            position: relative;
+        }
+        
+        .accessory-item input[type="checkbox"] {
+            display: none;
+        }
+        
+        .accessory-item label {
+            display: block;
+            padding: var(--spacing-sm);
+            background: var(--gray-light);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .accessory-item input:checked + label {
+            background: var(--blue);
+            color: var(--white);
+        }
+        
+        /* 伸展課程特殊樣式 */
+        .duration-selector {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+        }
+        
+        .duration-btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 2px solid var(--gray-light);
+            border-radius: var(--radius-md);
+            background: var(--white);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .duration-btn.active {
+            border-color: var(--green);
+            background: var(--green-light);
+            color: var(--green-dark);
+        }
+        
+        /* 回家作業 */
+        .homework-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-sm);
+        }
+        
+        .homework-item {
+            position: relative;
+        }
+        
+        .homework-item input {
+            display: none;
+        }
+        
+        .homework-item label {
+            display: block;
+            padding: var(--spacing-sm);
+            background: var(--yellow-light);
+            border: 2px solid transparent;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .homework-item input:checked + label {
+            border-color: var(--yellow-dark);
+            background: var(--yellow);
+        }
+        
+        /* 條件顯示欄位 */
+        .conditional-field {
+            display: none;
+            margin-top: var(--spacing-sm);
+        }
+        
+        .conditional-field.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        /* 分隔線 */
+        .divider {
+            height: 1px;
+            background: var(--gray-light);
+            margin: var(--spacing-lg) 0;
+        }
+        
+        /* 日期時間並排 */
+        .datetime-row {
+            display: flex;
+            gap: var(--spacing-md);
+        }
+        
+        .datetime-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        /* 小標題 */
+        .sub-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray);
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .sub-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--green);
+            border-radius: 2px;
+        }
+        
+        /* ============================================ */
+        /* 響應式設計 - 確保手機/平板/電腦一致性 */
+        /* ============================================ */
+        
+        /* 大螢幕電腦 (1200px+) */
+        @media (min-width: 1200px) {
+            .container {
+                max-width: 700px;
+            }
+            
+            .card {
+                padding: var(--spacing-xl);
+            }
+        }
+        
+        /* 平板橫向 & 小型電腦 (769px - 1199px) */
+        @media (min-width: 769px) and (max-width: 1199px) {
+            .container {
+                max-width: 650px;
+            }
+        }
+        
+        /* 平板直向 (481px - 768px) */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .container {
+                max-width: 100%;
+                padding: var(--spacing-md);
+            }
+            
+            .header-content {
+                max-width: 100%;
+            }
+            
+            .card {
+                padding: var(--spacing-lg);
+            }
+            
+            .exercise-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .accessories-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .homework-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        /* 大型手機 (376px - 480px) */
+        @media (min-width: 376px) and (max-width: 480px) {
+            :root {
+                --spacing-md: 14px;
+                --spacing-lg: 20px;
+            }
+            
+            .container {
+                padding: var(--spacing-sm);
+            }
+            
+            .card {
+                padding: var(--spacing-md);
+                border-radius: var(--radius-md);
+            }
+            
+            .card-title {
+                font-size: 16px;
+            }
+            
+            .form-label {
+                font-size: 13px;
+            }
+            
+            .form-input, .form-select, .form-textarea {
+                padding: 12px;
+                font-size: 16px; /* 防止 iOS 縮放 */
+            }
+            
+            .exercise-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .exercise-grid.cols-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .set-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: var(--spacing-sm);
+            }
+            
+            .set-number {
+                align-self: flex-start;
+            }
+            
+            .set-inputs {
+                flex-wrap: wrap;
+            }
+            
+            .set-input-group {
+                min-width: calc(50% - 4px);
+            }
+            
+            .set-delete {
+                align-self: flex-end;
+                margin-top: -40px;
+            }
+            
+            .accessories-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .accessory-with-input label {
+                padding: 6px;
+                font-size: 12px;
+            }
+            
+            .accessory-weight-input {
+                width: 42px;
+                padding: 6px 4px;
+                font-size: 12px;
+            }
+            
+            .homework-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .checkbox-group, .radio-group {
+                gap: 6px;
+            }
+            
+            .checkbox-item label, .radio-item label {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            
+            .duration-selector {
+                justify-content: center;
+            }
+            
+            .duration-btn {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            
+            .datetime-row {
+                flex-direction: column;
+                gap: var(--spacing-sm);
+            }
+            
+            .star-rating .star {
+                font-size: 22px;
+            }
+            
+            .star-rating-10 .star {
+                font-size: 18px;
+            }
+            
+            .star-rating-mini .star {
+                font-size: 14px;
+            }
+            
+            .btn {
+                padding: 14px;
+                font-size: 15px;
+            }
+            
+            .bottom-actions {
+                padding: var(--spacing-sm) var(--spacing-md);
+            }
+        }
+        
+        /* 小型手機 (320px - 375px) */
+        @media (max-width: 375px) {
+            :root {
+                --spacing-sm: 6px;
+                --spacing-md: 12px;
+                --spacing-lg: 16px;
+            }
+            
+            body {
+                padding-bottom: 90px;
+            }
+            
+            .header {
+                padding: var(--spacing-sm) var(--spacing-md);
+            }
+            
+            .header-logo {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .header-logo span {
+                font-size: 14px;
+            }
+            
+            .header-title {
+                font-size: 14px;
+            }
+            
+            .header-subtitle {
+                font-size: 11px;
+            }
+            
+            .coach-badge {
+                font-size: 11px;
+                padding: 3px 6px;
+            }
+            
+            .coach-class-type {
+                font-size: 10px;
+            }
+            
+            .container {
+                padding: var(--spacing-sm);
+            }
+            
+            .card {
+                padding: var(--spacing-md);
+                border-radius: var(--radius-md);
+                margin-bottom: var(--spacing-sm);
+            }
+            
+            .card-header {
+                margin-bottom: var(--spacing-md);
+            }
+            
+            .card-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+            
+            .card-title {
+                font-size: 15px;
+            }
+            
+            .form-group {
+                margin-bottom: var(--spacing-sm);
+            }
+            
+            .form-label {
+                font-size: 13px;
+                margin-bottom: 6px;
+            }
+            
+            .form-input, .form-select, .form-textarea {
+                padding: 10px 12px;
+                font-size: 16px; /* 防止 iOS 縮放 */
+                border-radius: var(--radius-sm);
+            }
+            
+            .search-input {
+                padding: 10px 12px 10px 38px;
+            }
+            
+            .search-icon {
+                left: 12px;
+                font-size: 16px;
+            }
+            
+            .member-info-card {
+                padding: var(--spacing-sm);
+            }
+            
+            .member-info-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+            }
+            
+            .member-info-item {
+                font-size: 13px;
+            }
+            
+            .member-info-item label {
+                font-size: 11px;
+            }
+            
+            .datetime-row {
+                flex-direction: column;
+                gap: var(--spacing-sm);
+            }
+            
+            .class-type-badge {
+                font-size: 14px;
+                padding: 6px 12px;
+            }
+            
+            .exercise-item {
+                padding: var(--spacing-sm);
+            }
+            
+            .exercise-header {
+                margin-bottom: var(--spacing-sm);
+            }
+            
+            .exercise-number {
+                width: 24px;
+                height: 24px;
+                font-size: 12px;
+            }
+            
+            .exercise-delete {
+                width: 28px;
+                height: 28px;
+            }
+            
+            .exercise-grid {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+            
+            .sub-title {
+                font-size: 13px;
+            }
+            
+            .set-item {
+                padding: var(--spacing-sm);
+                flex-direction: column;
+                align-items: stretch;
+                gap: 6px;
+                position: relative;
+            }
+            
+            .set-number {
+                font-size: 11px;
+                padding: 2px 6px;
+                align-self: flex-start;
+            }
+            
+            .set-inputs {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            
+            .set-input-group {
+                min-width: calc(50% - 3px);
+                flex: 1;
+            }
+            
+            .set-input-group label {
+                font-size: 9px;
+            }
+            
+            .set-input-group input, .set-input-group select {
+                padding: 6px 8px;
+                font-size: 13px;
+            }
+            
+            .set-delete {
+                position: absolute;
+                right: 8px;
+                top: 8px;
+                width: 20px;
+                height: 20px;
+            }
+            
+            .star-rating-mini .star {
+                font-size: 13px;
+            }
+            
+            .add-btn {
+                padding: var(--spacing-sm);
+                font-size: 13px;
+            }
+            
+            .accessories-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 4px;
+            }
+            
+            .accessory-item label {
+                font-size: 11px;
+                padding: 6px 4px;
+            }
+            
+            .accessory-with-input {
+                gap: 2px;
+            }
+            
+            .accessory-with-input label {
+                font-size: 11px;
+                padding: 6px 4px;
+            }
+            
+            .accessory-weight-input {
+                width: 38px;
+                font-size: 11px;
+                padding: 6px 2px;
+            }
+            
+            .checkbox-group, .radio-group {
+                gap: 6px;
+            }
+            
+            .checkbox-item label, .radio-item label {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            
+            .duration-selector {
+                gap: 6px;
+                justify-content: center;
+            }
+            
+            .duration-btn {
+                padding: 6px 10px;
+                font-size: 12px;
+                flex: 1;
+                min-width: auto;
+            }
+            
+            .star-rating .star {
+                font-size: 20px;
+            }
+            
+            .star-rating-10 .star {
+                font-size: 16px;
+            }
+            
+            .homework-grid {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+            
+            .homework-item label {
+                font-size: 12px;
+                padding: 8px;
+            }
+            
+            .toggle-group {
+                padding: var(--spacing-sm) var(--spacing-md);
+            }
+            
+            .toggle-label {
+                font-size: 13px;
+            }
+            
+            .toggle-switch {
+                width: 44px;
+                height: 24px;
+            }
+            
+            .toggle-slider:before {
+                width: 18px;
+                height: 18px;
+            }
+            
+            .toggle-switch input:checked + .toggle-slider:before {
+                transform: translateX(20px);
+            }
+            
+            .divider {
+                margin: var(--spacing-md) 0;
+            }
+            
+            .bottom-actions {
+                padding: var(--spacing-sm);
+            }
+            
+            .bottom-actions-content {
+                gap: 6px;
+            }
+            
+            .btn {
+                padding: 12px;
+                font-size: 14px;
+                border-radius: var(--radius-sm);
+            }
+            
+            .toast {
+                font-size: 13px;
+                padding: var(--spacing-sm) var(--spacing-md);
+                max-width: 90%;
+            }
+        }
+        
+        /* 超小螢幕 (< 320px) */
+        @media (max-width: 319px) {
+            .header-info {
+                display: none;
+            }
+            
+            .header-content {
+                justify-content: space-between;
+            }
+            
+            .member-info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .duration-btn {
+                flex: 0 0 calc(50% - 3px);
+            }
+        }
+        
+        /* 觸控裝置優化 */
+        @media (hover: none) and (pointer: coarse) {
+            .form-input, .form-select, .form-textarea {
+                font-size: 16px; /* 防止 iOS 自動縮放 */
+            }
+            
+            .checkbox-item label, .radio-item label {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .duration-btn {
+                min-height: 44px;
+            }
+            
+            .add-btn {
+                min-height: 48px;
+            }
+            
+            .btn {
+                min-height: 48px;
+            }
+            
+            .exercise-delete, .set-delete {
+                min-width: 44px;
+                min-height: 44px;
+            }
+        }
+        
+        /* 橫向模式優化 */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .loading-overlay {
+                flex-direction: row;
+                gap: var(--spacing-lg);
+            }
+            
+            .loading-logo {
+                width: 80px;
+                height: 80px;
+                margin-bottom: 0;
+            }
+            
+            .bottom-actions {
+                position: relative;
+                margin-top: var(--spacing-md);
+            }
+            
+            body {
+                padding-bottom: var(--spacing-md);
+            }
+        }
+        
+        /* MOTI/InBody 彈窗響應式 */
+        @media (max-width: 480px) {
+            .modal-container {
+                max-height: 95vh;
+                border-radius: var(--radius-md);
+            }
+            
+            .modal-header {
+                padding: var(--spacing-sm) var(--spacing-md);
+            }
+            
+            .modal-header h3 {
+                font-size: 14px;
+            }
+            
+            .modal-body {
+                padding: var(--spacing-md);
+            }
+            
+            .modal-tabs {
+                gap: 6px;
+            }
+            
+            .modal-tab {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            .moti-history-btn {
+                padding: var(--spacing-sm) var(--spacing-md);
+            }
+            
+            .moti-history-btn .moti-icon {
+                font-size: 18px;
+            }
+            
+            .moti-history-btn span:nth-child(2) {
+                font-size: 13px;
+            }
+            
+            .moti-timeline {
+                padding-left: 20px;
+            }
+            
+            .moti-timeline::before {
+                left: 6px;
+            }
+            
+            .moti-timeline-dot {
+                left: -20px;
+                width: 14px;
+                height: 14px;
+            }
+            
+            .moti-timeline-header {
+                padding: 10px 12px;
+            }
+            
+            .moti-timeline-date .date {
+                font-size: 13px;
+            }
+            
+            .moti-timeline-date .badge {
+                font-size: 9px;
+                padding: 2px 6px;
+            }
+            
+            .moti-timeline-summary {
+                font-size: 11px;
+            }
+            
+            .moti-image-container img {
+                max-height: 150px;
+            }
+            
+            .moti-image-container.inbody img {
+                max-height: 200px;
+            }
+            
+            .moti-image-placeholder {
+                width: 120px;
+                height: 140px;
+            }
+            
+            .moti-detail-content {
+                padding: 12px;
+            }
+            
+            .moti-detail-title {
+                font-size: 12px;
+            }
+            
+            .moti-detail-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+            }
+            
+            .moti-detail-item {
+                padding: 8px;
+            }
+            
+            .moti-detail-item label {
+                font-size: 9px;
+            }
+            
+            .moti-detail-item span {
+                font-size: 13px;
+            }
+            
+            .moti-posture-grid {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+            
+            .moti-posture-item {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            
+            .moti-muscle-tag {
+                font-size: 11px;
+                padding: 3px 8px;
+            }
+            
+            .moti-notes {
+                font-size: 12px;
+                padding: 8px 12px;
+            }
+        }
+        
+        /* 列印樣式 */
+        @media print {
+            .header, .bottom-actions, .loading-overlay {
+                display: none;
+            }
+            
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 載入畫面 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-logo">
+            <span>衡點</span>
+        </div>
+        <div class="loading-text">正在載入系統...</div>
+    </div>
+    
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast"></div>
+    
+    <!-- 頂部導航 -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-logo">
+                <span>衡點</span>
+            </div>
+            <div class="header-info">
+                <div class="header-title">教練課表寫入系統</div>
+                <div class="header-subtitle" id="currentDate"></div>
+            </div>
+            <div class="coach-info">
+                <div class="coach-badge" id="coachBadge">載入中...</div>
+                <div class="coach-class-type" id="coachClassType"></div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 學員資訊 -->
+        <section class="card" id="memberSection">
+            <div class="card-header">
+                <div class="card-icon green">👤</div>
+                <div class="card-title">學員資訊</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">搜尋學員<span class="required">*</span></label>
+                <div class="search-container">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" id="memberSearch" placeholder="輸入學員姓名搜尋..." autocomplete="off">
+                    <button type="button" class="search-clear" id="searchClear" onclick="clearMemberSearch()">✕</button>
+                    <div class="search-results" id="searchResults"></div>
+                </div>
+            </div>
+            
+            <div class="member-info-card" id="memberInfoCard">
+                <div class="member-info-header">
+                    <span class="member-info-title">✓ 已選擇學員</span>
+                    <button type="button" class="member-info-clear" onclick="clearSelectedMember()">重新選擇</button>
+                </div>
+                <div class="member-info-grid">
+                    <div class="member-info-item">
+                        <label>會員編號</label>
+                        <span id="memberIdDisplay">-</span>
+                    </div>
+                    <div class="member-info-item">
+                        <label>姓名</label>
+                        <span id="memberName">-</span>
+                    </div>
+                    <div class="member-info-item">
+                        <label>性別</label>
+                        <span id="memberGender">-</span>
+                    </div>
+                    <div class="member-info-item">
+                        <label>生日</label>
+                        <span id="memberBirthday">-</span>
+                    </div>
+                </div>
+                <div class="member-disease-alert" id="memberDiseaseAlert" style="display: none;">
+                    <label>⚠️ 疾病史注意</label>
+                    <span id="memberDisease">-</span>
+                </div>
+                
+                <!-- MOTI 檢測歷程按鈕 -->
+                <button type="button" class="moti-history-btn" onclick="openMotiModal()">
+                    <span class="moti-icon">📊</span>
+                    <span>查看 MOTI / InBody 歷程</span>
+                    <span class="moti-arrow">›</span>
+                </button>
+            </div>
+            
+            <!-- MOTI 檢測歷程彈窗 -->
+            <div class="modal-overlay" id="motiModal">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h3>📊 體態檢測歷程</h3>
+                        <button type="button" class="modal-close" onclick="closeMotiModal()">✕</button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- 會員資訊 -->
+                        <div class="modal-member-info" id="modalMemberInfo"></div>
+                        
+                        <!-- 標籤切換 -->
+                        <div class="modal-tabs">
+                            <button type="button" class="modal-tab active" data-tab="moti" onclick="switchModalTab('moti')">
+                                📊 MOTI 3D
+                            </button>
+                            <button type="button" class="modal-tab" data-tab="inbody" onclick="switchModalTab('inbody')">
+                                📏 InBody
+                            </button>
+                        </div>
+                        
+                        <!-- MOTI 時間線 -->
+                        <div class="modal-tab-content active" id="motiTabContent">
+                            <div class="moti-timeline-loading" id="motiLoading">
+                                <div class="spinner-small"></div>
+                                <span>載入中...</span>
+                            </div>
+                            <div class="moti-timeline-empty" id="motiEmpty" style="display: none;">
+                                <span>📭</span>
+                                <p>尚無 MOTI 檢測記錄</p>
+                            </div>
+                            <div class="moti-timeline" id="motiTimelineContent"></div>
+                        </div>
+                        
+                        <!-- InBody 時間線 -->
+                        <div class="modal-tab-content" id="inbodyTabContent">
+                            <div class="moti-timeline-loading" id="inbodyLoading">
+                                <div class="spinner-small"></div>
+                                <span>載入中...</span>
+                            </div>
+                            <div class="moti-timeline-empty" id="inbodyEmpty" style="display: none;">
+                                <span>📭</span>
+                                <p>尚無 InBody 檢測記錄</p>
+                            </div>
+                            <div class="moti-timeline" id="inbodyTimelineContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <!-- 課程日期時間 -->
+            <div class="datetime-row">
+                <div class="form-group">
+                    <label class="form-label">課程日期<span class="required">*</span></label>
+                    <input type="date" class="form-input" id="classDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">課程時間<span class="required">*</span></label>
+                    <input type="time" class="form-input" id="classTime">
+                </div>
+            </div>
+        </section>
+        
+        <!-- 課程內容 -->
+        <section class="card" id="classSection">
+            <div class="card-header">
+                <div class="card-icon pink">📋</div>
+                <div class="card-title">課程內容</div>
+            </div>
+            
+            <!-- 課種顯示 -->
+            <div class="class-type-badge" id="classTypeBadge" style="display: none;">
+                <span class="icon" id="classTypeIcon"></span>
+                <span id="classTypeName"></span>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">當堂課程主要訓練目的</label>
+                <textarea class="form-textarea" id="trainingPurpose" placeholder="請輸入本堂課的主要訓練目的..."></textarea>
+            </div>
+        </section>
+        
+        <!-- 訓練內容 -->
+        <section class="card" id="trainingSection">
+            <div class="card-header">
+                <div class="card-icon yellow">📝</div>
+                <div class="card-title">訓練內容</div>
+            </div>
+            
+            <!-- 重訓訓練區塊 -->
+            <div class="training-section" id="weightTraining">
+                <div id="weightExerciseList"></div>
+                <button type="button" class="add-btn" onclick="addWeightExercise()">
+                    <span>+</span> 新增訓練動作
+                </button>
+            </div>
+            
+            <!-- 皮拉提斯訓練區塊 -->
+            <div class="training-section" id="pilatesTraining">
+                <div id="pilatesExerciseList"></div>
+                <button type="button" class="add-btn" onclick="addPilatesExercise()">
+                    <span>+</span> 新增訓練動作
+                </button>
+            </div>
+            
+            <!-- 伸展課程區塊 -->
+            <div class="training-section" id="stretchTraining">
+                <div class="form-group">
+                    <label class="form-label">課程長度<span class="required">*</span></label>
+                    <div class="duration-selector">
+                        <button type="button" class="duration-btn" data-duration="15">15分鐘</button>
+                        <button type="button" class="duration-btn" data-duration="30">30分鐘</button>
+                        <button type="button" class="duration-btn" data-duration="45">45分鐘</button>
+                        <button type="button" class="duration-btn" data-duration="60">60分鐘</button>
+                        <button type="button" class="duration-btn" data-duration="80">80分鐘</button>
+                    </div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="form-group">
+                    <label class="form-label">當堂課程主訴（單選）<span class="required">*</span></label>
+                    <div class="radio-group" id="mainComplaintGroup">
+                        <div class="radio-item">
+                            <input type="radio" name="mainComplaint" id="mc_shoulder" value="肩頸手臂">
+                            <label for="mc_shoulder">肩頸手臂</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="mainComplaint" id="mc_wrist" value="手腕下背">
+                            <label for="mc_wrist">手腕下背</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="mainComplaint" id="mc_waist" value="腰髖">
+                            <label for="mc_waist">腰髖</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="mainComplaint" id="mc_hip" value="臀">
+                            <label for="mc_hip">臀</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="mainComplaint" id="mc_thigh" value="大腿膝蓋">
+                            <label for="mc_thigh">大腿膝蓋</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="mainComplaint" id="mc_calf" value="小腿">
+                            <label for="mc_calf">小腿</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="mainComplaint" id="mc_foot" value="腳底">
+                            <label for="mc_foot">腳底</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="mainComplaint" id="mc_other" value="other">
+                            <label for="mc_other">其他</label>
+                        </div>
+                    </div>
+                    <div class="conditional-field" id="mainComplaintOther">
+                        <input type="text" class="form-input" id="mainComplaintOtherText" placeholder="請輸入其他主訴...">
+                    </div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="form-group">
+                    <label class="form-label">延伸處理部位（多選）</label>
+                    <div class="checkbox-group" id="extendedAreasGroup">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ea_shoulder" value="肩頸手臂">
+                            <label for="ea_shoulder">肩頸手臂</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ea_wrist" value="手腕下背">
+                            <label for="ea_wrist">手腕下背</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ea_waist" value="腰髖">
+                            <label for="ea_waist">腰髖</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ea_hip" value="臀">
+                            <label for="ea_hip">臀</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ea_thigh" value="大腿膝蓋">
+                            <label for="ea_thigh">大腿膝蓋</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ea_calf" value="小腿">
+                            <label for="ea_calf">小腿</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ea_foot" value="腳底">
+                            <label for="ea_foot">腳底</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ea_other" value="other">
+                            <label for="ea_other">其他</label>
+                        </div>
+                    </div>
+                    <div class="conditional-field" id="extendedAreasOther">
+                        <input type="text" class="form-input" id="extendedAreasOtherText" placeholder="請輸入其他部位...">
+                    </div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="form-group">
+                    <label class="form-label">使用輔具</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tool_oil" value="精油">
+                            <label for="tool_oil">精油</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tool_scraper" value="刮痧板">
+                            <label for="tool_scraper">刮痧板</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tool_cupping" value="拔罐器">
+                            <label for="tool_cupping">拔罐器</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="tool_other" value="other">
+                            <label for="tool_other">其他</label>
+                        </div>
+                    </div>
+                    <div class="conditional-field" id="stretchToolOther">
+                        <input type="text" class="form-input" id="stretchToolOtherText" placeholder="請輸入其他輔具...">
+                    </div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="form-group">
+                    <label class="form-label">學生主訴緊繃進步星數 (1-10)</label>
+                    <div class="star-rating star-rating-10" data-name="progressRating" data-max="10">
+                        <input type="hidden" name="progressRating" value="">
+                        <span class="star" data-value="1"></span>
+                        <span class="star" data-value="2"></span>
+                        <span class="star" data-value="3"></span>
+                        <span class="star" data-value="4"></span>
+                        <span class="star" data-value="5"></span>
+                        <span class="star" data-value="6"></span>
+                        <span class="star" data-value="7"></span>
+                        <span class="star" data-value="8"></span>
+                        <span class="star" data-value="9"></span>
+                        <span class="star" data-value="10"></span>
+                    </div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="form-group">
+                    <label class="form-label">推薦的回家作業（多選）</label>
+                    <div class="homework-grid">
+                        <div class="homework-item">
+                            <input type="checkbox" id="hw_neck" value="頸部側彎">
+                            <label for="hw_neck">頸部側彎</label>
+                        </div>
+                        <div class="homework-item">
+                            <input type="checkbox" id="hw_arm" value="伸展手臂">
+                            <label for="hw_arm">伸展手臂</label>
+                        </div>
+                        <div class="homework-item">
+                            <input type="checkbox" id="hw_lateral" value="橫拉伸展">
+                            <label for="hw_lateral">橫拉伸展</label>
+                        </div>
+                        <div class="homework-item">
+                            <input type="checkbox" id="hw_knee_hug" value="仰臥抱膝">
+                            <label for="hw_knee_hug">仰臥抱膝</label>
+                        </div>
+                        <div class="homework-item">
+                            <input type="checkbox" id="hw_hip_flex" value="半跪髖前伸展">
+                            <label for="hw_hip_flex">半跪髖前伸展</label>
+                        </div>
+                        <div class="homework-item">
+                            <input type="checkbox" id="hw_calf_sit" value="坐姿小腿向前伸">
+                            <label for="hw_calf_sit">坐姿小腿向前伸</label>
+                        </div>
+                        <div class="homework-item">
+                            <input type="checkbox" id="hw_chest" value="站姿開胸伸展">
+                            <label for="hw_chest">站姿開胸伸展</label>
+                        </div>
+                        <div class="homework-item">
+                            <input type="checkbox" id="hw_wrist" value="手腕屈伸伸展">
+                            <label for="hw_wrist">手腕屈伸伸展</label>
+                        </div>
+                        <div class="homework-item">
+                            <input type="checkbox" id="hw_twist" value="仰臥雙膝左右倒">
+                            <label for="hw_twist">仰臥雙膝左右倒</label>
+                        </div>
+                        <div class="homework-item">
+                            <input type="checkbox" id="hw_four" value="仰臥4字腿（臀部）">
+                            <label for="hw_four">仰臥4字腿（臀部）</label>
+                        </div>
+                        <div class="homework-item">
+                            <input type="checkbox" id="hw_calf_stand" value="站姿小腿伸展">
+                            <label for="hw_calf_stand">站姿小腿伸展</label>
+                        </div>
+                        <div class="homework-item">
+                            <input type="checkbox" id="hw_quad" value="側躺大腿前側伸展">
+                            <label for="hw_quad">側躺大腿前側伸展</label>
+                        </div>
+                        <div class="homework-item">
+                            <input type="checkbox" id="hw_ball" value="腳底踩球">
+                            <label for="hw_ball">腳底踩球</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 學員當日狀況 -->
+        <section class="card" id="statusSection">
+            <div class="card-header">
+                <div class="card-icon blue">📊</div>
+                <div class="card-title">學員當日狀況</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">學生是否遲到<span class="required">*</span></label>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" name="isLate" id="isLate_no" value="no" checked>
+                        <label for="isLate_no">否</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" name="isLate" id="isLate_yes" value="yes">
+                        <label for="isLate_yes">是</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">訓練間精神狀態</label>
+                <div class="star-rating" data-name="mentalState" data-max="5">
+                    <input type="hidden" name="mentalState" value="">
+                    <span class="star" data-value="1"></span>
+                    <span class="star" data-value="2"></span>
+                    <span class="star" data-value="3"></span>
+                    <span class="star" data-value="4"></span>
+                    <span class="star" data-value="5"></span>
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="form-group">
+                <label class="form-label">課間是否發生以下狀況（必選）<span class="required">*</span></label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="incident_none" value="無">
+                        <label for="incident_none">無</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="incident_dizzy" value="學員暈眩">
+                        <label for="incident_dizzy">學員暈眩</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="incident_nausea" value="疑似噁心想吐">
+                        <label for="incident_nausea">疑似噁心想吐</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="incident_vomit" value="嘔吐">
+                        <label for="incident_vomit">嘔吐</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="incident_injury" value="運動傷害">
+                        <label for="incident_injury">運動傷害</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="form-group">
+                <label class="form-label">是否有情況需馬上通知行政關心<span class="required">*</span></label>
+                <p style="font-size: 12px; color: var(--gray); margin-bottom: var(--spacing-sm);">如有新增疾病史、或其他過去未察覺情況</p>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" name="needAdminFollowup" id="adminFollowup_no" value="no" checked>
+                        <label for="adminFollowup_no">否</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" name="needAdminFollowup" id="adminFollowup_yes" value="yes">
+                        <label for="adminFollowup_yes">是</label>
+                    </div>
+                </div>
+                <div class="conditional-field" id="adminFollowupNotes">
+                    <label class="form-label" style="margin-top: var(--spacing-md);">請詳細描述情況<span class="required">*</span></label>
+                    <textarea class="form-textarea" id="adminFollowupText" placeholder="請詳細說明需要行政關心的情況..."></textarea>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <!-- 底部按鈕 -->
+    <div class="bottom-actions">
+        <div class="bottom-actions-content">
+            <button type="button" class="btn btn-secondary" onclick="resetForm()">清除重填</button>
+            <button type="button" class="btn btn-primary" id="submitBtn" onclick="submitForm()">送出紀錄</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // 設定區
+        // ============================================
+        const CONFIG = {
+            LIFF_ID: 'YOUR_LIFF_ID', // 請替換為實際的 LIFF ID
+            WEBHOOK_URL: 'https://hook.us2.make.com/YOUR_WEBHOOK_ID', // Make.com Webhook URL
+            DEBUG_MODE: true // 設為 false 則需要 LIFF 登入
+        };
+        
+        // ============================================
+        // 全域變數
+        // ============================================
+        let currentCoach = null;
+        let selectedMember = null;
+        let coachClassType = null; // 教練的課種
+        let weightExerciseCount = 0;
+        let pilatesExerciseCount = 0;
+        let searchTimeout = null;
+        
+        // 課種對應
+        const CLASS_TYPE_INFO = {
+            weight: { name: '重訓', icon: '🏋️' },
+            pilates: { name: '皮拉提斯', icon: '🧘' },
+            stretch: { name: '伸展', icon: '💆' }
+        };
+        
+        // 皮拉提斯輔具選項（啞鈴單獨處理）
+        const PILATES_ACCESSORIES = [
+            '啞鈴', '瑜珈球(小)', '瑜珈球(大)', '彈力繩', 
+            '健身環', '瑜珈墊', '瑜珈磚', '其他'
+        ];
+        
+        // 皮拉提斯器材選項
+        const PILATES_EQUIPMENT = [
+            'Reformer', 'Cadillac', 'Wunda Chair', 'Ladder Barrel', 
+            'Spine Corrector', 'Mat', '其他'
+        ];
+        
+        // 重訓器材選項
+        const WEIGHT_EQUIPMENT = [
+            '槓鈴', '啞鈴', '壺鈴', '纜繩機', '史密斯機',
+            '腿推機', '胸推機', '划船機', '下拉機', '自由重量',
+            '彈力帶', '懸吊系統', '藥球', '其他'
+        ];
+        
+        // ============================================
+        // 初始化
+        // ============================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 設定當前日期
+            setCurrentDate();
+            
+            // 初始化 LIFF 或 Debug 模式
+            if (CONFIG.DEBUG_MODE) {
+                await initDebugMode();
+            } else {
+                await initLiff();
+            }
+            
+            // 綁定事件
+            bindEvents();
+            
+            // 初始化星星評分
+            initAllStarRatings();
+            
+            // 隱藏載入畫面
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }, 500);
+        });
+        
+        // 設定當前日期
+        function setCurrentDate() {
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('zh-TW', options);
+            
+            // 設定日期輸入框為今天
+            const today = now.toISOString().split('T')[0];
+            document.getElementById('classDate').value = today;
+            
+            // 設定時間輸入框為當前時間（取整到最近的30分鐘）
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes() < 30 ? '00' : '30';
+            document.getElementById('classTime').value = `${hours}:${minutes}`;
+        }
+        
+        // Debug 模式初始化
+        async function initDebugMode() {
+            // 模擬教練資料 - 從 URL 參數取得課種
+            const urlParams = new URLSearchParams(window.location.search);
+            const typeFromUrl = urlParams.get('type') || 'weight'; // 預設重訓
+            
+            currentCoach = {
+                id: 1,
+                name: '王小明',
+                lineUserId: 'U1234567890',
+                classType: typeFromUrl // 教練的課種
+            };
+            
+            document.getElementById('coachBadge').textContent = currentCoach.name + ' 教練';
+            
+            // 設定教練課種
+            setCoachClassType(currentCoach.classType);
+        }
+        
+        // LIFF 初始化
+        async function initLiff() {
+            try {
+                await liff.init({ liffId: CONFIG.LIFF_ID });
+                
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                
+                const profile = await liff.getProfile();
+                const lineUserId = profile.userId;
+                
+                // 從 URL 取得教練 LINE ID（如果有的話）
+                const urlParams = new URLSearchParams(window.location.search);
+                const coachLineId = urlParams.get('coachId') || lineUserId;
+                
+                // 查詢教練資訊（包含課種）
+                await loadCoachInfo(coachLineId);
+                
+            } catch (error) {
+                console.error('LIFF 初始化失敗:', error);
+                showToast('系統初始化失敗，請重新整理頁面', 'error');
+            }
+        }
+        
+        // 載入教練資訊
+        async function loadCoachInfo(lineUserId) {
+            try {
+                const response = await fetch(CONFIG.WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'getCoachByLineId',
+                        lineUserId: lineUserId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.coach) {
+                    currentCoach = data.coach;
+                    document.getElementById('coachBadge').textContent = currentCoach.name + ' 教練';
+                    
+                    // 設定教練課種
+                    setCoachClassType(currentCoach.classType);
+                } else {
+                    showToast('找不到教練資料', 'error');
+                }
+            } catch (error) {
+                console.error('載入教練資訊失敗:', error);
+                showToast('載入教練資訊失敗', 'error');
+            }
+        }
+        
+        // 設定教練課種並顯示對應介面
+        function setCoachClassType(classType) {
+            coachClassType = classType;
+            
+            const typeInfo = CLASS_TYPE_INFO[classType];
+            if (!typeInfo) {
+                showToast('無效的課種設定', 'error');
+                return;
+            }
+            
+            // 顯示教練課種標籤
+            document.getElementById('coachClassType').textContent = typeInfo.name + '教練';
+            
+            // 顯示課種 Badge
+            const badge = document.getElementById('classTypeBadge');
+            badge.style.display = 'inline-flex';
+            document.getElementById('classTypeIcon').textContent = typeInfo.icon;
+            document.getElementById('classTypeName').textContent = typeInfo.name + '課程';
+            
+            // 顯示對應的訓練區塊
+            document.querySelectorAll('.training-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            switch (classType) {
+                case 'weight':
+                    document.getElementById('weightTraining').classList.add('active');
+                    addWeightExercise(); // 預設新增一個動作
+                    break;
+                case 'pilates':
+                    document.getElementById('pilatesTraining').classList.add('active');
+                    addPilatesExercise(); // 預設新增一個動作
+                    break;
+                case 'stretch':
+                    document.getElementById('stretchTraining').classList.add('active');
+                    break;
+            }
+        }
+        
+        // ============================================
+        // 學員搜尋功能
+        // ============================================
+        function bindEvents() {
+            const searchInput = document.getElementById('memberSearch');
+            const searchResults = document.getElementById('searchResults');
+            const searchClear = document.getElementById('searchClear');
+            
+            // 搜尋輸入
+            searchInput.addEventListener('input', function() {
+                const query = this.value.trim();
+                
+                // 顯示/隱藏清除按鈕
+                searchClear.classList.toggle('show', query.length > 0);
+                
+                // 防抖處理
+                clearTimeout(searchTimeout);
+                
+                if (query.length < 1) {
+                    searchResults.classList.remove('show');
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    searchMembers(query);
+                }, 300);
+            });
+            
+            // 點擊外部關閉搜尋結果
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.search-container')) {
+                    searchResults.classList.remove('show');
+                }
+            });
+            
+            // 焦點時顯示結果（如果有輸入）
+            searchInput.addEventListener('focus', function() {
+                if (this.value.trim().length >= 1 && searchResults.innerHTML) {
+                    searchResults.classList.add('show');
+                }
+            });
+            
+            // 伸展課程時長選擇
+            document.querySelectorAll('.duration-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            
+            // 主訴其他選項
+            document.getElementById('mc_other').addEventListener('change', function() {
+                document.getElementById('mainComplaintOther').classList.toggle('show', this.checked);
+            });
+            
+            // 延伸部位其他選項
+            document.getElementById('ea_other').addEventListener('change', function() {
+                document.getElementById('extendedAreasOther').classList.toggle('show', this.checked);
+            });
+            
+            // 輔具其他選項
+            document.getElementById('tool_other').addEventListener('change', function() {
+                document.getElementById('stretchToolOther').classList.toggle('show', this.checked);
+            });
+            
+            // 行政關心 radio 選擇
+            document.querySelectorAll('input[name="needAdminFollowup"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    document.getElementById('adminFollowupNotes').classList.toggle('show', this.value === 'yes');
+                });
+            });
+            
+            // 課間狀況互斥邏輯
+            document.getElementById('incident_none').addEventListener('change', function() {
+                if (this.checked) {
+                    ['incident_dizzy', 'incident_nausea', 'incident_vomit', 'incident_injury'].forEach(id => {
+                        document.getElementById(id).checked = false;
+                    });
+                }
+            });
+            
+            ['incident_dizzy', 'incident_nausea', 'incident_vomit', 'incident_injury'].forEach(id => {
+                document.getElementById(id).addEventListener('change', function() {
+                    if (this.checked) {
+                        document.getElementById('incident_none').checked = false;
+                    }
+                });
+            });
+        }
+        
+        // 搜尋會員
+        async function searchMembers(query) {
+            const searchResults = document.getElementById('searchResults');
+            
+            // 顯示載入中
+            searchResults.innerHTML = '<div class="search-loading">搜尋中...</div>';
+            searchResults.classList.add('show');
+            
+            try {
+                let members = [];
+                
+                if (CONFIG.DEBUG_MODE) {
+                    // 模擬搜尋
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    
+                    // 注意：id 是學生編號（member_id），用於查詢 moti_assessments
+                    const mockMembers = [
+                        { id: 'TWHDS20230000053', name: '江舒右', gender: 'female', birthday: '1990-05-15', disease_history: '無' },
+                        { id: 'TWHDS20230000102', name: '林大明', gender: 'male', birthday: '1985-08-22', disease_history: '高血壓、心臟病史' },
+                        { id: 'TWHDS20230000088', name: '張美玲', gender: 'female', birthday: '1992-12-03', disease_history: '腰椎間盤突出' },
+                        { id: 'TWHDS20230000045', name: '王志豪', gender: 'male', birthday: '1988-03-10', disease_history: '無' },
+                        { id: 'TWHDS20230000067', name: '李雅婷', gender: 'female', birthday: '1995-07-28', disease_history: '氣喘' },
+                    ];
+                    
+                    // 過濾符合的會員
+                    members = mockMembers.filter(m => 
+                        m.id.toLowerCase().includes(query.toLowerCase()) || 
+                        m.name.includes(query)
+                    );
+                } else {
+                    // 呼叫 API 搜尋
+                    const response = await fetch(CONFIG.WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'searchMembers',
+                            query: query
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        members = data.members;
+                    }
+                }
+                
+                // 顯示結果
+                if (members.length === 0) {
+                    searchResults.innerHTML = '<div class="search-no-result">找不到符合的學員</div>';
+                } else {
+                    searchResults.innerHTML = members.map(member => {
+                        const birthday = formatBirthday(member.birthday);
+                        return `
+                            <div class="search-result-item" onclick='selectMember(${JSON.stringify(member).replace(/'/g, "&#39;")})'>
+                                <span class="member-id">${member.id}</span>
+                                <span class="member-name">${member.name}</span>
+                                <span class="member-birthday">(${birthday})</span>
+                            </div>
+                        `;
+                    }).join('');
+                }
+                
+            } catch (error) {
+                console.error('搜尋失敗:', error);
+                searchResults.innerHTML = '<div class="search-no-result">搜尋發生錯誤</div>';
+            }
+        }
+        
+        // 格式化生日顯示
+        function formatBirthday(birthday) {
+            if (!birthday) return '';
+            const parts = birthday.split('-');
+            if (parts.length === 3) {
+                return `${parts[0]}/${parts[1]}/${parts[2]}`;
+            }
+            return birthday;
+        }
+        
+        // 選擇會員
+        async function selectMember(member) {
+            const searchResults = document.getElementById('searchResults');
+            const searchInput = document.getElementById('memberSearch');
+            
+            // 隱藏搜尋結果
+            searchResults.classList.remove('show');
+            
+            // 清空搜尋框並禁用
+            searchInput.value = '';
+            searchInput.disabled = true;
+            searchInput.placeholder = '已選擇學員';
+            document.getElementById('searchClear').classList.remove('show');
+            
+            // 載入會員完整資料
+            await loadMemberDetails(member.id);
+        }
+        
+        // 從後端載入會員詳細資料
+        async function loadMemberDetails(memberId) {
+            try {
+                let memberData = null;
+                
+                if (CONFIG.DEBUG_MODE) {
+                    // 模擬從後端取得資料
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
+                    // 注意：id 應該是學生編號（member_id），用於查詢 moti_assessments
+                    const mockMembers = {
+                        'TWHDS20230000053': { id: 'TWHDS20230000053', name: '江舒右', gender: 'female', birthday: '1990-05-15', disease_history: '無' },
+                        'TWHDS20230000102': { id: 'TWHDS20230000102', name: '林大明', gender: 'male', birthday: '1985-08-22', disease_history: '高血壓、心臟病史' },
+                        'TWHDS20230000088': { id: 'TWHDS20230000088', name: '張美玲', gender: 'female', birthday: '1992-12-03', disease_history: '腰椎間盤突出' },
+                        'TWHDS20230000045': { id: 'TWHDS20230000045', name: '王志豪', gender: 'male', birthday: '1988-03-10', disease_history: '無' },
+                        'TWHDS20230000067': { id: 'TWHDS20230000067', name: '李雅婷', gender: 'female', birthday: '1995-07-28', disease_history: '氣喘' },
+                    };
+                    
+                    memberData = mockMembers[memberId];
+                } else {
+                    // 呼叫 API 取得會員詳細資料
+                    const response = await fetch(CONFIG.WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'getMemberDetails',
+                            memberId: memberId
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        memberData = data.member;
+                    }
+                }
+                
+                if (memberData) {
+                    displayMemberInfo(memberData);
+                } else {
+                    showToast('無法載入學員資料', 'error');
+                }
+                
+            } catch (error) {
+                console.error('載入會員資料失敗:', error);
+                showToast('載入學員資料失敗', 'error');
+            }
+        }
+        
+        // 顯示會員資訊
+        function displayMemberInfo(member) {
+            selectedMember = member;
+            
+            // 顯示會員資訊卡
+            document.getElementById('memberIdDisplay').textContent = member.id;
+            document.getElementById('memberName').textContent = member.name;
+            document.getElementById('memberGender').textContent = member.gender === 'male' ? '男' : '女';
+            
+            // 計算年齡並顯示生日
+            if (member.birthday) {
+                const birthDate = new Date(member.birthday);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                // 格式化生日顯示：YYYY/MM/DD (年齡歲)
+                const year = birthDate.getFullYear();
+                const month = (birthDate.getMonth() + 1).toString().padStart(2, '0');
+                const day = birthDate.getDate().toString().padStart(2, '0');
+                document.getElementById('memberBirthday').textContent = `${year}/${month}/${day} (${age}歲)`;
+            } else {
+                document.getElementById('memberBirthday').textContent = '-';
+            }
+            
+            // 疾病史
+            const diseaseAlert = document.getElementById('memberDiseaseAlert');
+            if (member.disease_history && member.disease_history !== '無' && member.disease_history.trim() !== '') {
+                document.getElementById('memberDisease').textContent = member.disease_history;
+                diseaseAlert.style.display = 'block';
+            } else {
+                diseaseAlert.style.display = 'none';
+            }
+            
+            document.getElementById('memberInfoCard').classList.add('show');
+        }
+        
+        // 清除搜尋
+        function clearMemberSearch() {
+            const searchInput = document.getElementById('memberSearch');
+            const searchResults = document.getElementById('searchResults');
+            
+            searchInput.value = '';
+            searchResults.classList.remove('show');
+            document.getElementById('searchClear').classList.remove('show');
+        }
+        
+        // 清除已選會員
+        function clearSelectedMember() {
+            selectedMember = null;
+            
+            const searchInput = document.getElementById('memberSearch');
+            searchInput.disabled = false;
+            searchInput.value = '';
+            searchInput.placeholder = '輸入會員編號或姓名搜尋...';
+            
+            document.getElementById('memberInfoCard').classList.remove('show');
+        }
+        
+        // ============================================
+        // MOTI / InBody 檢測歷程彈窗
+        // ============================================
+        let motiHistoryData = [];
+        let inbodyHistoryData = [];
+        
+        function openMotiModal() {
+            if (!selectedMember) {
+                showToast('請先選擇學員', 'error');
+                return;
+            }
+            
+            // 顯示彈窗
+            document.getElementById('motiModal').classList.add('show');
+            
+            // 設定會員資訊
+            document.getElementById('modalMemberInfo').innerHTML = `
+                <div class="name">${selectedMember.name}</div>
+                <div class="id">會員編號：${selectedMember.id}</div>
+            `;
+            
+            // 重置標籤
+            switchModalTab('moti');
+            
+            // 載入資料
+            loadMotiHistory(selectedMember.id);
+            loadInbodyHistory(selectedMember.id);
+        }
+        
+        function closeMotiModal() {
+            document.getElementById('motiModal').classList.remove('show');
+        }
+        
+        function switchModalTab(tab) {
+            // 更新標籤樣式
+            document.querySelectorAll('.modal-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === tab);
+            });
+            
+            // 更新內容顯示
+            document.getElementById('motiTabContent').classList.toggle('active', tab === 'moti');
+            document.getElementById('inbodyTabContent').classList.toggle('active', tab === 'inbody');
+        }
+        
+        // 點擊彈窗外部關閉
+        document.getElementById('motiModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeMotiModal();
+            }
+        });
+        
+        // ============================================
+        // MOTI 歷程
+        // ============================================
+        async function loadMotiHistory(memberId) {
+            document.getElementById('motiLoading').style.display = 'flex';
+            document.getElementById('motiEmpty').style.display = 'none';
+            document.getElementById('motiTimelineContent').innerHTML = '';
+            
+            try {
+                const response = await fetch(CONFIG.WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'getMotiHistory',
+                        memberId: memberId
+                    })
+                });
+                
+                const result = await response.json();
+                document.getElementById('motiLoading').style.display = 'none';
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    motiHistoryData = result.data;
+                    renderMotiTimeline(result.data);
+                } else {
+                    document.getElementById('motiEmpty').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('查詢 MOTI 歷程失敗:', error);
+                document.getElementById('motiLoading').style.display = 'none';
+                
+                if (CONFIG.DEBUG_MODE) {
+                    motiHistoryData = getMockMotiData();
+                    renderMotiTimeline(motiHistoryData);
+                } else {
+                    document.getElementById('motiEmpty').style.display = 'block';
+                }
+            }
+        }
+        
+        function getMockMotiData() {
+            // 模擬資料庫回傳的格式
+            return [
+                {
+                    id: 1,
+                    member_id: 'TWHDS20230000053',
+                    member_name: '江舒右',
+                    date: '2026-01-21',
+                    imageUrl: 'https://via.placeholder.com/150x200/9fcccc/ffffff?text=MOTI+3D',
+                    risk_1: '骨盆前傾',
+                    risk_2: '圓肩',
+                    risk_3: '頸椎前引',
+                    short_term_goal: '改善骨盆前傾，強化核心穩定',
+                    total_courses: 24,
+                    weight_training_courses: 12,
+                    pilates_training_courses: 8,
+                    stretch_courses: 4,
+                    functional_training: '死蟲、鳥狗、橋式',
+                    fascia_release: '髂腰肌、股四頭肌、胸大肌',
+                    precautions: '注意腰椎穩定，避免過度伸展'
+                },
+                {
+                    id: 2,
+                    member_id: 'TWHDS20230000053',
+                    member_name: '江舒右',
+                    date: '2025-12-15',
+                    imageUrl: '',
+                    risk_1: '骨盆前傾',
+                    risk_2: '圓肩',
+                    risk_3: '膝超伸',
+                    short_term_goal: '基礎體態矯正',
+                    total_courses: 24,
+                    weight_training_courses: 10,
+                    pilates_training_courses: 10,
+                    stretch_courses: 4,
+                    functional_training: '呼吸訓練、死蟲',
+                    fascia_release: '髂腰肌、腓腸肌',
+                    precautions: '膝關節穩定訓練'
+                },
+                {
+                    id: 3,
+                    member_id: 'TWHDS20230000053',
+                    member_name: '江舒右',
+                    date: '2025-11-10',
+                    imageUrl: '',
+                    risk_1: '脊椎側彎',
+                    risk_2: '骨盆前傾',
+                    risk_3: '圓肩',
+                    short_term_goal: '首次評估，建立基礎',
+                    total_courses: 24,
+                    weight_training_courses: 8,
+                    pilates_training_courses: 12,
+                    stretch_courses: 4,
+                    functional_training: '呼吸訓練、核心啟動',
+                    fascia_release: '全身筋膜放鬆',
+                    precautions: '循序漸進，注意動作品質'
+                }
+            ];
+        }
+        
+        function renderMotiTimeline(data) {
+            const container = document.getElementById('motiTimelineContent');
+            
+            const html = data.map((item, index) => {
+                const date = new Date(item.date);
+                const formattedDate = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2,'0')}/${date.getDate().toString().padStart(2,'0')}`;
+                const isLatest = index === 0;
+                const detailHtml = generateMotiDetailHtml(item);
+                
+                // 摘要顯示風險排名
+                const summaryText = item.risk_1 ? 
+                    `${item.risk_1}${item.risk_2 ? '、' + item.risk_2 : ''}` : 
+                    '點擊查看詳細';
+                
+                return `
+                    <div class="moti-timeline-item" data-index="${index}">
+                        <div class="moti-timeline-dot"></div>
+                        <div class="moti-timeline-header" onclick="toggleMotiDetail(${index}, 'moti')">
+                            <div class="moti-timeline-date">
+                                <span class="date">${formattedDate}</span>
+                                ${isLatest ? '<span class="badge">最新</span>' : ''}
+                            </div>
+                            <div class="moti-timeline-summary">
+                                ${summaryText}
+                            </div>
+                            <span class="moti-timeline-arrow">›</span>
+                        </div>
+                        <div class="moti-timeline-detail">
+                            <div class="moti-detail-content">
+                                ${detailHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html;
+        }
+        
+        function generateMotiDetailHtml(item) {
+            // 處理圖片 - 資料庫是逗號分隔的字串，取第一張
+            let firstImageUrl = '';
+            if (item.imageUrl) {
+                const images = item.imageUrl.split(',');
+                firstImageUrl = images[0].trim();
+            }
+            
+            const imageHtml = firstImageUrl ? `
+                <div class="moti-image-section">
+                    <div class="moti-image-container">
+                        <img src="${firstImageUrl}" alt="MOTI 3D 體態圖" onerror="this.parentElement.innerHTML='<div class=\\'moti-image-placeholder\\'><span>🖼️</span>圖片載入失敗</div>'">
+                    </div>
+                </div>
+            ` : `
+                <div class="moti-image-section">
+                    <div class="moti-image-container">
+                        <div class="moti-image-placeholder">
+                            <span>🖼️</span>
+                            無體態圖片
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 風險排名
+            const risks = [item.risk_1, item.risk_2, item.risk_3].filter(r => r && r.trim());
+            const risksHtml = risks.length > 0 ? 
+                risks.map((r, i) => `<span class="moti-muscle-tag tight">${i+1}. ${r}</span>`).join('') :
+                '<span class="moti-muscle-tag" style="background:#e8e8e8;color:#666;">無</span>';
+            
+            // 建議課程
+            const coursesHtml = `
+                <div class="moti-detail-grid" style="grid-template-columns: repeat(4, 1fr);">
+                    <div class="moti-detail-item highlight">
+                        <label>總堂數</label>
+                        <span>${item.total_courses || '-'}</span>
+                    </div>
+                    <div class="moti-detail-item">
+                        <label>重訓</label>
+                        <span>${item.weight_training_courses || '-'}</span>
+                    </div>
+                    <div class="moti-detail-item">
+                        <label>皮拉提斯</label>
+                        <span>${item.pilates_training_courses || '-'}</span>
+                    </div>
+                    <div class="moti-detail-item">
+                        <label>伸展</label>
+                        <span>${item.stretch_courses || '-'}</span>
+                    </div>
+                </div>
+            `;
+            
+            return `
+                ${imageHtml}
+                
+                <div class="moti-detail-section">
+                    <div class="moti-detail-title">⚠️ 風險排名</div>
+                    <div class="moti-muscle-tags">${risksHtml}</div>
+                </div>
+                
+                ${item.short_term_goal ? `
+                <div class="moti-detail-section">
+                    <div class="moti-detail-title">🎯 短期目標</div>
+                    <div class="moti-notes">${item.short_term_goal}</div>
+                </div>
+                ` : ''}
+                
+                <div class="moti-detail-section">
+                    <div class="moti-detail-title">📋 建議課程堂數</div>
+                    ${coursesHtml}
+                </div>
+                
+                ${item.functional_training ? `
+                <div class="moti-detail-section">
+                    <div class="moti-detail-title">💪 建議功能訓練</div>
+                    <div class="moti-notes">${item.functional_training}</div>
+                </div>
+                ` : ''}
+                
+                ${item.fascia_release ? `
+                <div class="moti-detail-section">
+                    <div class="moti-detail-title">🧘 建議筋膜放鬆</div>
+                    <div class="moti-notes">${item.fascia_release}</div>
+                </div>
+                ` : ''}
+                
+                ${item.precautions ? `
+                <div class="moti-detail-section">
+                    <div class="moti-detail-title">⚡ 注意事項</div>
+                    <div class="moti-notes" style="background: var(--pink-light); border-color: var(--pink);">${item.precautions}</div>
+                </div>
+                ` : ''}
+            `;
+        }
+        
+        function toggleMotiDetail(index, type) {
+            const container = type === 'moti' ? 
+                document.getElementById('motiTimelineContent') : 
+                document.getElementById('inbodyTimelineContent');
+            
+            const items = container.querySelectorAll('.moti-timeline-item');
+            const targetItem = container.querySelector(`.moti-timeline-item[data-index="${index}"]`);
+            
+            if (targetItem.classList.contains('active')) {
+                targetItem.classList.remove('active');
+            } else {
+                items.forEach(item => item.classList.remove('active'));
+                targetItem.classList.add('active');
+            }
+        }
+        
+        // ============================================
+        // InBody 歷程
+        // ============================================
+        async function loadInbodyHistory(memberId) {
+            document.getElementById('inbodyLoading').style.display = 'flex';
+            document.getElementById('inbodyEmpty').style.display = 'none';
+            document.getElementById('inbodyTimelineContent').innerHTML = '';
+            
+            try {
+                const response = await fetch(CONFIG.WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'getInbodyHistory',
+                        memberId: memberId
+                    })
+                });
+                
+                const result = await response.json();
+                document.getElementById('inbodyLoading').style.display = 'none';
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    inbodyHistoryData = result.data;
+                    renderInbodyTimeline(result.data);
+                } else {
+                    document.getElementById('inbodyEmpty').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('查詢 InBody 歷程失敗:', error);
+                document.getElementById('inbodyLoading').style.display = 'none';
+                
+                if (CONFIG.DEBUG_MODE) {
+                    inbodyHistoryData = getMockInbodyData();
+                    renderInbodyTimeline(inbodyHistoryData);
+                } else {
+                    document.getElementById('inbodyEmpty').style.display = 'block';
+                }
+            }
+        }
+        
+        function getMockInbodyData() {
+            return [
+                {
+                    id: 1,
+                    date: '2026-01-18',
+                    imageUrl: 'https://via.placeholder.com/200x280/7ac19a/ffffff?text=InBody+Report'
+                },
+                {
+                    id: 2,
+                    date: '2025-12-10',
+                    imageUrl: 'https://via.placeholder.com/200x280/9fcccc/ffffff?text=InBody+Report'
+                },
+                {
+                    id: 3,
+                    date: '2025-11-05',
+                    imageUrl: ''
+                }
+            ];
+        }
+        
+        function renderInbodyTimeline(data) {
+            const container = document.getElementById('inbodyTimelineContent');
+            
+            const html = data.map((item, index) => {
+                const date = new Date(item.date);
+                const formattedDate = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2,'0')}/${date.getDate().toString().padStart(2,'0')}`;
+                const isLatest = index === 0;
+                const detailHtml = generateInbodyDetailHtml(item);
+                
+                return `
+                    <div class="moti-timeline-item" data-index="${index}">
+                        <div class="moti-timeline-dot"></div>
+                        <div class="moti-timeline-header" onclick="toggleMotiDetail(${index}, 'inbody')">
+                            <div class="moti-timeline-date">
+                                <span class="date">${formattedDate}</span>
+                                ${isLatest ? '<span class="badge">最新</span>' : ''}
+                            </div>
+                            <div class="moti-timeline-summary">
+                                點擊查看檢測報告
+                            </div>
+                            <span class="moti-timeline-arrow">›</span>
+                        </div>
+                        <div class="moti-timeline-detail">
+                            <div class="moti-detail-content">
+                                ${detailHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html;
+        }
+        
+        function generateInbodyDetailHtml(item) {
+            // InBody 只顯示圖片
+            if (item.imageUrl) {
+                return `
+                    <div class="moti-image-section" style="margin-bottom: 0;">
+                        <div class="moti-image-container inbody">
+                            <img src="${item.imageUrl}" alt="InBody 檢測報告" onerror="this.parentElement.innerHTML='<div class=\\'moti-image-placeholder\\'><span>📄</span>圖片載入失敗</div>'">
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="moti-image-section" style="margin-bottom: 0;">
+                        <div class="moti-image-container inbody">
+                            <div class="moti-image-placeholder">
+                                <span>📄</span>
+                                無檢測報告圖片
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // ============================================
+        // 重訓動作管理
+        // ============================================
+        function addWeightExercise() {
+            weightExerciseCount++;
+            const container = document.getElementById('weightExerciseList');
+            const exerciseId = `weight_exercise_${weightExerciseCount}`;
+            
+            const exerciseHtml = `
+                <div class="exercise-item" id="${exerciseId}">
+                    <div class="exercise-header">
+                        <div class="exercise-number">${weightExerciseCount}</div>
+                        <button type="button" class="exercise-delete" onclick="deleteWeightExercise('${exerciseId}')">✕</button>
+                    </div>
+                    
+                    <div class="exercise-grid">
+                        <div class="form-group">
+                            <label class="form-label">動作名稱</label>
+                            <input type="text" class="form-input" placeholder="例：槓鈴深蹲" data-field="name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">器材</label>
+                            <select class="form-select" data-field="equipment" onchange="toggleEquipmentOther(this, '${exerciseId}')">
+                                <option value="">選擇器材</option>
+                                ${WEIGHT_EQUIPMENT.map(e => `<option value="${e}">${e}</option>`).join('')}
+                            </select>
+                            <input type="text" class="form-input equipment-other-input" id="${exerciseId}_equipment_other" placeholder="請輸入其他器材..." data-field="equipmentOther">
+                        </div>
+                    </div>
+                    
+                    <div class="sub-title" style="margin-top: var(--spacing-md);">組數紀錄</div>
+                    <div class="sets-container" id="${exerciseId}_sets"></div>
+                    <button type="button" class="add-btn" style="margin-top: var(--spacing-sm);" onclick="addWeightSet('${exerciseId}')">
+                        <span>+</span> 新增一組
+                    </button>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', exerciseHtml);
+            addWeightSet(exerciseId);
+        }
+        
+        function addWeightSet(exerciseId) {
+            const container = document.getElementById(`${exerciseId}_sets`);
+            const setNumber = container.children.length + 1;
+            const setId = `${exerciseId}_set_${setNumber}`;
+            
+            const setHtml = `
+                <div class="set-item" id="${setId}">
+                    <div class="set-number">第${setNumber}組</div>
+                    <div class="set-inputs">
+                        <div class="set-input-group">
+                            <label>重量(kg)</label>
+                            <input type="number" step="0.5" placeholder="0" data-field="weight">
+                        </div>
+                        <div class="set-input-group">
+                            <label>次數</label>
+                            <input type="number" placeholder="0" data-field="reps">
+                        </div>
+                        <div class="set-input-group">
+                            <label>動作品質</label>
+                            <div class="star-rating-mini" data-field="quality" data-max="5">
+                                <input type="hidden" data-field="quality-value" value="">
+                                <span class="star" data-value="1"></span>
+                                <span class="star" data-value="2"></span>
+                                <span class="star" data-value="3"></span>
+                                <span class="star" data-value="4"></span>
+                                <span class="star" data-value="5"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="set-delete" onclick="deleteSet('${setId}')">✕</button>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', setHtml);
+            
+            // 初始化新添加的星星評分
+            const newSet = document.getElementById(setId);
+            initStarRating(newSet.querySelector('.star-rating-mini'));
+        }
+        
+        function deleteWeightExercise(exerciseId) {
+            document.getElementById(exerciseId)?.remove();
+            renumberWeightExercises();
+        }
+        
+        function renumberWeightExercises() {
+            const exercises = document.querySelectorAll('#weightExerciseList .exercise-item');
+            exercises.forEach((exercise, index) => {
+                exercise.querySelector('.exercise-number').textContent = index + 1;
+            });
+            weightExerciseCount = exercises.length;
+        }
+        
+        // ============================================
+        // 皮拉提斯動作管理
+        // ============================================
+        function addPilatesExercise() {
+            pilatesExerciseCount++;
+            const container = document.getElementById('pilatesExerciseList');
+            const exerciseId = `pilates_exercise_${pilatesExerciseCount}`;
+            
+            // 輔具 HTML，啞鈴特殊處理加上重量輸入框
+            const accessoriesHtml = PILATES_ACCESSORIES.map((acc, idx) => {
+                if (acc === '啞鈴') {
+                    return `
+                        <div class="accessory-item accessory-with-input">
+                            <input type="checkbox" id="${exerciseId}_acc_${idx}" value="${acc}">
+                            <label for="${exerciseId}_acc_${idx}">${acc}</label>
+                            <input type="number" class="accessory-weight-input" id="${exerciseId}_dumbbell_weight" placeholder="kg" step="0.5" min="0" disabled>
+                        </div>
+                    `;
+                }
+                return `
+                    <div class="accessory-item">
+                        <input type="checkbox" id="${exerciseId}_acc_${idx}" value="${acc}">
+                        <label for="${exerciseId}_acc_${idx}">${acc}</label>
+                    </div>
+                `;
+            }).join('');
+            
+            const exerciseHtml = `
+                <div class="exercise-item" id="${exerciseId}">
+                    <div class="exercise-header">
+                        <div class="exercise-number">${pilatesExerciseCount}</div>
+                        <button type="button" class="exercise-delete" onclick="deletePilatesExercise('${exerciseId}')">✕</button>
+                    </div>
+                    
+                    <div class="exercise-grid">
+                        <div class="form-group">
+                            <label class="form-label">動作名稱</label>
+                            <input type="text" class="form-input" placeholder="例：Footwork" data-field="name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">器材</label>
+                            <select class="form-select" data-field="equipment" onchange="toggleEquipmentOther(this, '${exerciseId}')">
+                                <option value="">選擇器材</option>
+                                ${PILATES_EQUIPMENT.map(e => `<option value="${e}">${e}</option>`).join('')}
+                            </select>
+                            <input type="text" class="form-input equipment-other-input" id="${exerciseId}_equipment_other" placeholder="請輸入其他器材..." data-field="equipmentOther">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: var(--spacing-sm);">
+                        <label class="form-label">其它輔具（多選）</label>
+                        <div class="accessories-grid">${accessoriesHtml}</div>
+                        <div class="conditional-field" id="${exerciseId}_acc_other_field">
+                            <input type="text" class="form-input" placeholder="請輸入其他輔具..." data-field="accessoryOther">
+                        </div>
+                    </div>
+                    
+                    <div class="sub-title" style="margin-top: var(--spacing-md);">組數紀錄</div>
+                    <div class="sets-container" id="${exerciseId}_sets"></div>
+                    <button type="button" class="add-btn" style="margin-top: var(--spacing-sm);" onclick="addPilatesSet('${exerciseId}')">
+                        <span>+</span> 新增一組
+                    </button>
+                    
+                    <div class="form-group" style="margin-top: var(--spacing-md);">
+                        <label class="form-label">備註</label>
+                        <input type="text" class="form-input" placeholder="補充說明..." data-field="notes">
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', exerciseHtml);
+            
+            // 綁定啞鈴勾選時啟用重量輸入
+            const dumbbellIdx = PILATES_ACCESSORIES.indexOf('啞鈴');
+            const dumbbellCheckbox = document.getElementById(`${exerciseId}_acc_${dumbbellIdx}`);
+            if (dumbbellCheckbox) {
+                dumbbellCheckbox.addEventListener('change', function() {
+                    const weightInput = document.getElementById(`${exerciseId}_dumbbell_weight`);
+                    if (weightInput) {
+                        weightInput.disabled = !this.checked;
+                        if (!this.checked) weightInput.value = '';
+                    }
+                });
+            }
+            
+            // 綁定「其他」輔具的顯示邏輯
+            const otherIdx = PILATES_ACCESSORIES.indexOf('其他');
+            const otherCheckbox = document.getElementById(`${exerciseId}_acc_${otherIdx}`);
+            if (otherCheckbox) {
+                otherCheckbox.addEventListener('change', function() {
+                    document.getElementById(`${exerciseId}_acc_other_field`).classList.toggle('show', this.checked);
+                });
+            }
+            
+            addPilatesSet(exerciseId);
+        }
+        
+        function addPilatesSet(exerciseId) {
+            const container = document.getElementById(`${exerciseId}_sets`);
+            const setNumber = container.children.length + 1;
+            const setId = `${exerciseId}_set_${setNumber}`;
+            
+            const setHtml = `
+                <div class="set-item" id="${setId}">
+                    <div class="set-number">第${setNumber}組</div>
+                    <div class="set-inputs">
+                        <div class="set-input-group">
+                            <label>彈簧顏色</label>
+                            <select data-field="spring">
+                                <option value="">選擇</option>
+                                <option value="黃">黃</option>
+                                <option value="綠">綠</option>
+                                <option value="紅">紅</option>
+                            </select>
+                        </div>
+                        <div class="set-input-group">
+                            <label>次數</label>
+                            <input type="number" placeholder="0" data-field="reps">
+                        </div>
+                        <div class="set-input-group">
+                            <label>動作品質</label>
+                            <div class="star-rating-mini" data-field="quality" data-max="5">
+                                <input type="hidden" data-field="quality-value" value="">
+                                <span class="star" data-value="1"></span>
+                                <span class="star" data-value="2"></span>
+                                <span class="star" data-value="3"></span>
+                                <span class="star" data-value="4"></span>
+                                <span class="star" data-value="5"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="set-delete" onclick="deleteSet('${setId}')">✕</button>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', setHtml);
+            
+            // 初始化新添加的星星評分
+            const newSet = document.getElementById(setId);
+            initStarRating(newSet.querySelector('.star-rating-mini'));
+        }
+        
+        function deletePilatesExercise(exerciseId) {
+            document.getElementById(exerciseId)?.remove();
+            renumberPilatesExercises();
+        }
+        
+        function renumberPilatesExercises() {
+            const exercises = document.querySelectorAll('#pilatesExerciseList .exercise-item');
+            exercises.forEach((exercise, index) => {
+                exercise.querySelector('.exercise-number').textContent = index + 1;
+            });
+            pilatesExerciseCount = exercises.length;
+        }
+        
+        // 通用：刪除組數
+        function deleteSet(setId) {
+            const setElement = document.getElementById(setId);
+            const container = setElement?.parentElement;
+            setElement?.remove();
+            
+            // 重新編號
+            if (container) {
+                const sets = container.querySelectorAll('.set-item');
+                sets.forEach((set, index) => {
+                    set.querySelector('.set-number').textContent = `第${index + 1}組`;
+                });
+            }
+        }
+        
+        // 切換器材其他輸入框
+        function toggleEquipmentOther(selectElement, exerciseId) {
+            const otherInput = document.getElementById(`${exerciseId}_equipment_other`);
+            if (otherInput) {
+                otherInput.classList.toggle('show', selectElement.value === '其他');
+                if (selectElement.value !== '其他') {
+                    otherInput.value = '';
+                }
+            }
+        }
+        
+        // ============================================
+        // 資料收集與提交
+        // ============================================
+        function collectFormData() {
+            const data = {
+                // 基本資訊
+                coachId: currentCoach?.id,
+                coachName: currentCoach?.name,
+                memberId: selectedMember?.id,
+                memberName: selectedMember?.name,
+                classDate: document.getElementById('classDate').value,
+                classTime: document.getElementById('classTime').value,
+                classType: coachClassType,
+                trainingPurpose: document.getElementById('trainingPurpose').value,
+                
+                // 學員當日狀況
+                isLate: document.querySelector('input[name="isLate"]:checked')?.value === 'yes',
+                mentalStateRating: document.querySelector('input[name="mentalState"]')?.value || null,
+                incidentTypes: getCheckedValues(['incident_none', 'incident_dizzy', 'incident_nausea', 'incident_vomit', 'incident_injury']),
+                needAdminFollowup: document.querySelector('input[name="needAdminFollowup"]:checked')?.value === 'yes',
+                adminFollowupNotes: document.getElementById('adminFollowupText').value,
+                
+                // 訓練內容（根據課種不同）
+                trainingDetails: null
+            };
+            
+            // 根據課種收集訓練內容
+            switch (coachClassType) {
+                case 'weight':
+                    data.trainingDetails = collectWeightTrainingData();
+                    break;
+                case 'pilates':
+                    data.trainingDetails = collectPilatesTrainingData();
+                    break;
+                case 'stretch':
+                    data.trainingDetails = collectStretchData();
+                    break;
+            }
+            
+            return data;
+        }
+        
+        function collectWeightTrainingData() {
+            const exercises = [];
+            document.querySelectorAll('#weightExerciseList .exercise-item').forEach(exercise => {
+                const sets = [];
+                exercise.querySelectorAll('.set-item').forEach(set => {
+                    const qualityInput = set.querySelector('.star-rating-mini input[type="hidden"]');
+                    sets.push({
+                        weight: set.querySelector('[data-field="weight"]').value,
+                        reps: set.querySelector('[data-field="reps"]').value,
+                        quality: qualityInput ? qualityInput.value : ''
+                    });
+                });
+                
+                let equipment = exercise.querySelector('[data-field="equipment"]').value;
+                if (equipment === '其他') {
+                    const otherInput = exercise.querySelector('[data-field="equipmentOther"]');
+                    equipment = otherInput ? otherInput.value : '其他';
+                }
+                
+                exercises.push({
+                    name: exercise.querySelector('[data-field="name"]').value,
+                    equipment: equipment,
+                    sets: sets
+                });
+            });
+            return { exercises };
+        }
+        
+        function collectPilatesTrainingData() {
+            const exercises = [];
+            document.querySelectorAll('#pilatesExerciseList .exercise-item').forEach(exercise => {
+                const exerciseId = exercise.id;
+                const accessories = [];
+                
+                // 收集所有輔具（包含啞鈴）
+                exercise.querySelectorAll('.accessories-grid .accessory-item input[type="checkbox"]:checked').forEach(checkbox => {
+                    if (checkbox.value === '啞鈴') {
+                        // 啞鈴特殊處理，加上重量
+                        const weightInput = document.getElementById(`${exerciseId}_dumbbell_weight`);
+                        const weight = weightInput ? weightInput.value : '';
+                        accessories.push(weight ? `啞鈴(${weight}kg)` : '啞鈴');
+                    } else {
+                        accessories.push(checkbox.value);
+                    }
+                });
+                
+                const accessoryOtherInput = exercise.querySelector('[data-field="accessoryOther"]');
+                if (accessories.includes('其他') && accessoryOtherInput?.value) {
+                    const idx = accessories.indexOf('其他');
+                    accessories.splice(idx, 1);
+                    accessories.push(accessoryOtherInput.value);
+                }
+                
+                const sets = [];
+                exercise.querySelectorAll('.set-item').forEach(set => {
+                    const qualityInput = set.querySelector('.star-rating-mini input[type="hidden"]');
+                    sets.push({
+                        spring: set.querySelector('[data-field="spring"]').value,
+                        reps: set.querySelector('[data-field="reps"]').value,
+                        quality: qualityInput ? qualityInput.value : ''
+                    });
+                });
+                
+                let equipment = exercise.querySelector('[data-field="equipment"]').value;
+                if (equipment === '其他') {
+                    const otherInput = exercise.querySelector('[data-field="equipmentOther"]');
+                    equipment = otherInput ? otherInput.value : '其他';
+                }
+                
+                exercises.push({
+                    name: exercise.querySelector('[data-field="name"]').value,
+                    equipment: equipment,
+                    accessories: accessories,
+                    sets: sets,
+                    notes: exercise.querySelector('[data-field="notes"]').value
+                });
+            });
+            return { exercises };
+        }
+        
+        function collectStretchData() {
+            // 課程長度
+            const durationBtn = document.querySelector('.duration-btn.active');
+            const duration = durationBtn ? durationBtn.dataset.duration : null;
+            
+            // 主訴
+            let mainComplaint = document.querySelector('input[name="mainComplaint"]:checked')?.value;
+            if (mainComplaint === 'other') {
+                mainComplaint = document.getElementById('mainComplaintOtherText').value;
+            }
+            
+            // 延伸部位
+            const extendedAreas = [];
+            document.querySelectorAll('#extendedAreasGroup input:checked').forEach(checkbox => {
+                if (checkbox.value === 'other') {
+                    const otherText = document.getElementById('extendedAreasOtherText').value;
+                    if (otherText) extendedAreas.push(otherText);
+                } else {
+                    extendedAreas.push(checkbox.value);
+                }
+            });
+            
+            // 輔具
+            const tools = [];
+            ['tool_oil', 'tool_scraper', 'tool_cupping', 'tool_other'].forEach(id => {
+                const checkbox = document.getElementById(id);
+                if (checkbox.checked) {
+                    if (checkbox.value === 'other') {
+                        const otherText = document.getElementById('stretchToolOtherText').value;
+                        if (otherText) tools.push(otherText);
+                    } else {
+                        tools.push(checkbox.value);
+                    }
+                }
+            });
+            
+            // 進步星數
+            const progressRating = document.querySelector('input[name="progressRating"]')?.value;
+            
+            // 回家作業
+            const homework = [];
+            document.querySelectorAll('.homework-item input:checked').forEach(checkbox => {
+                homework.push(checkbox.value);
+            });
+            
+            return {
+                duration: duration,
+                mainComplaint: mainComplaint,
+                extendedAreas: extendedAreas,
+                tools: tools,
+                progressRating: progressRating,
+                homework: homework
+            };
+        }
+        
+        function getCheckedValues(ids) {
+            const values = [];
+            ids.forEach(id => {
+                const checkbox = document.getElementById(id);
+                if (checkbox?.checked) {
+                    values.push(checkbox.value);
+                }
+            });
+            return values;
+        }
+        
+        // 驗證表單
+        function validateForm() {
+            if (!selectedMember) {
+                showToast('請選擇學員', 'error');
+                return false;
+            }
+            
+            if (!document.getElementById('classDate').value) {
+                showToast('請選擇課程日期', 'error');
+                return false;
+            }
+            
+            if (!document.getElementById('classTime').value) {
+                showToast('請選擇課程時間', 'error');
+                return false;
+            }
+            
+            if (!coachClassType) {
+                showToast('課程類型設定錯誤', 'error');
+                return false;
+            }
+            
+            // 檢查課間狀況是否有勾選
+            const incidentChecked = document.querySelector('#incident_none:checked, #incident_dizzy:checked, #incident_nausea:checked, #incident_vomit:checked, #incident_injury:checked');
+            if (!incidentChecked) {
+                showToast('請選擇課間狀況', 'error');
+                return false;
+            }
+            
+            // 檢查行政關心選「是」時必須填寫說明
+            const needAdmin = document.querySelector('input[name="needAdminFollowup"]:checked')?.value === 'yes';
+            if (needAdmin && !document.getElementById('adminFollowupText').value.trim()) {
+                showToast('請填寫需通知行政的詳細情況', 'error');
+                return false;
+            }
+            
+            // 伸展課程額外驗證
+            if (coachClassType === 'stretch') {
+                if (!document.querySelector('.duration-btn.active')) {
+                    showToast('請選擇課程長度', 'error');
+                    return false;
+                }
+                if (!document.querySelector('input[name="mainComplaint"]:checked')) {
+                    showToast('請選擇當堂課程主訴', 'error');
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+        
+        // 提交表單
+        async function submitForm() {
+            if (!validateForm()) return;
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '提交中...';
+            
+            try {
+                const formData = collectFormData();
+                console.log('提交資料:', formData);
+                
+                if (CONFIG.DEBUG_MODE) {
+                    // Debug 模式：模擬成功
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    showToast('課表紀錄已成功提交！', 'success');
+                } else {
+                    const response = await fetch(CONFIG.WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'submitClassRecord',
+                            data: formData
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showToast('課表紀錄已成功提交！', 'success');
+                        
+                        // 可選：關閉 LIFF
+                        // if (liff.isInClient()) liff.closeWindow();
+                    } else {
+                        throw new Error(result.message || '提交失敗');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('提交失敗:', error);
+                showToast('提交失敗，請稍後再試', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '送出紀錄';
+            }
+        }
+        
+        // 重置表單
+        function resetForm() {
+            if (!confirm('確定要清除所有已填寫的內容嗎？')) return;
+            
+            // 重置會員選擇
+            clearSelectedMember();
+            
+            // 重置訓練目的
+            document.getElementById('trainingPurpose').value = '';
+            
+            // 重置重訓區塊
+            document.getElementById('weightExerciseList').innerHTML = '';
+            weightExerciseCount = 0;
+            if (coachClassType === 'weight') addWeightExercise();
+            
+            // 重置皮拉提斯區塊
+            document.getElementById('pilatesExerciseList').innerHTML = '';
+            pilatesExerciseCount = 0;
+            if (coachClassType === 'pilates') addPilatesExercise();
+            
+            // 重置伸展區塊
+            document.querySelectorAll('.duration-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('input[name="mainComplaint"]').forEach(radio => radio.checked = false);
+            document.querySelectorAll('#extendedAreasGroup input').forEach(checkbox => checkbox.checked = false);
+            document.querySelectorAll('.homework-item input').forEach(checkbox => checkbox.checked = false);
+            // 重置進步星數
+            const progressInput = document.querySelector('input[name="progressRating"]');
+            if (progressInput) {
+                progressInput.value = '';
+                updateStarDisplay(progressInput.closest('.star-rating'), 0);
+            }
+            ['tool_oil', 'tool_scraper', 'tool_cupping', 'tool_other'].forEach(id => {
+                document.getElementById(id).checked = false;
+            });
+            
+            // 重置學員狀況
+            document.getElementById('isLate_no').checked = true;
+            // 重置精神狀態星數
+            const mentalInput = document.querySelector('input[name="mentalState"]');
+            if (mentalInput) {
+                mentalInput.value = '';
+                updateStarDisplay(mentalInput.closest('.star-rating'), 0);
+            }
+            document.querySelectorAll('#incident_none, #incident_dizzy, #incident_nausea, #incident_vomit, #incident_injury').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            document.getElementById('adminFollowup_no').checked = true;
+            document.getElementById('adminFollowupText').value = '';
+            document.getElementById('adminFollowupNotes').classList.remove('show');
+            
+            // 重設日期時間為當前
+            setCurrentDate();
+            
+            // 重置條件欄位
+            document.querySelectorAll('.conditional-field').forEach(field => field.classList.remove('show'));
+            
+            showToast('表單已清除', 'success');
+        }
+        
+        // Toast 提示
+        // ============================================
+        // 星星評分系統（支持半星）
+        // ============================================
+        function initStarRating(container) {
+            const stars = container.querySelectorAll('.star');
+            const hiddenInput = container.querySelector('input[type="hidden"]');
+            
+            stars.forEach(star => {
+                star.addEventListener('click', function(e) {
+                    const rect = this.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const width = rect.width;
+                    const starValue = parseInt(this.dataset.value);
+                    
+                    // 點左半邊 = 半星，點右半邊 = 全星
+                    let rating;
+                    if (x < width / 2) {
+                        rating = starValue - 0.5;
+                    } else {
+                        rating = starValue;
+                    }
+                    
+                    // 更新隱藏輸入
+                    if (hiddenInput) {
+                        hiddenInput.value = rating;
+                    }
+                    
+                    // 更新視覺顯示
+                    updateStarDisplay(container, rating);
+                });
+                
+                // hover 效果
+                star.addEventListener('mousemove', function(e) {
+                    const rect = this.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const width = rect.width;
+                    const starValue = parseInt(this.dataset.value);
+                    
+                    let hoverRating;
+                    if (x < width / 2) {
+                        hoverRating = starValue - 0.5;
+                    } else {
+                        hoverRating = starValue;
+                    }
+                    
+                    updateStarDisplay(container, hoverRating, true);
+                });
+            });
+            
+            container.addEventListener('mouseleave', function() {
+                const currentValue = hiddenInput ? parseFloat(hiddenInput.value) || 0 : 0;
+                updateStarDisplay(container, currentValue);
+            });
+        }
+        
+        function updateStarDisplay(container, rating, isHover = false) {
+            const stars = container.querySelectorAll('.star');
+            
+            stars.forEach(star => {
+                const starValue = parseInt(star.dataset.value);
+                star.classList.remove('full', 'half');
+                
+                if (starValue <= Math.floor(rating)) {
+                    star.classList.add('full');
+                } else if (starValue === Math.ceil(rating) && rating % 1 !== 0) {
+                    star.classList.add('half');
+                }
+            });
+        }
+        
+        function initAllStarRatings() {
+            document.querySelectorAll('.star-rating, .star-rating-mini').forEach(container => {
+                initStarRating(container);
+            });
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
