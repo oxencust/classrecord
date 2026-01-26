@@ -123,8 +123,10 @@
             background: var(--white);
             padding: var(--spacing-md);
             box-shadow: var(--shadow-sm);
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 100;
         }
         
@@ -194,6 +196,8 @@
             max-width: 600px;
             margin: 0 auto;
             padding: var(--spacing-md);
+            padding-top: 90px;  /* 補償 fixed header 高度 */
+            padding-bottom: 90px;  /* 補償 fixed bottom-actions 高度 */
         }
         
         /* 卡片 */
@@ -285,12 +289,20 @@
         /* 搜尋輸入框容器 */
         .search-container {
             position: relative;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .search-input-wrapper {
+            position: relative;
+            flex: 1;
         }
         
         .search-input {
             width: 100%;
             padding: var(--spacing-md);
             padding-left: 44px;
+            padding-right: 40px;
             border: 2px solid var(--gray-light);
             border-radius: var(--radius-md);
             font-size: 16px;
@@ -313,6 +325,27 @@
             color: var(--gray);
             font-size: 18px;
             pointer-events: none;
+        }
+        
+        .search-btn {
+            padding: 0 20px;
+            background: var(--green);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        
+        .search-btn:hover {
+            background: var(--green-dark);
+        }
+        
+        .search-btn:active {
+            transform: scale(0.98);
         }
         
         .search-clear {
@@ -1666,6 +1699,8 @@
             .container {
                 max-width: 100%;
                 padding: var(--spacing-md);
+                padding-top: 90px;
+                padding-bottom: 90px;
             }
             
             .header-content {
@@ -1698,6 +1733,8 @@
             
             .container {
                 padding: var(--spacing-sm);
+                padding-top: 85px;
+                padding-bottom: 85px;
             }
             
             .card {
@@ -1857,6 +1894,8 @@
             
             .container {
                 padding: var(--spacing-sm);
+                padding-top: 80px;
+                padding-bottom: 80px;
             }
             
             .card {
@@ -2382,10 +2421,13 @@
             <div class="form-group">
                 <label class="form-label">搜尋學員<span class="required">*</span></label>
                 <div class="search-container">
-                    <span class="search-icon">🔍</span>
-                    <input type="text" class="search-input" id="memberSearch" placeholder="輸入學員姓名搜尋..." autocomplete="off">
-                    <button type="button" class="search-clear" id="searchClear" onclick="clearMemberSearch()">✕</button>
-                    <div class="search-results" id="searchResults"></div>
+                    <div class="search-input-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" id="memberSearch" placeholder="輸入學員姓名或編號..." autocomplete="off">
+                        <button type="button" class="search-clear" id="searchClear" onclick="clearMemberSearch()">✕</button>
+                        <div class="search-results" id="searchResults"></div>
+                    </div>
+                    <button type="button" class="search-btn" id="searchBtn" onclick="doSearch()">搜尋</button>
                 </div>
             </div>
             
@@ -2734,6 +2776,13 @@
                             <input type="checkbox" id="hw_ball" value="腳底踩球">
                             <label for="hw_ball">腳底踩球</label>
                         </div>
+                        <div class="homework-item">
+                            <input type="checkbox" id="hw_other" value="other">
+                            <label for="hw_other">其他</label>
+                        </div>
+                    </div>
+                    <div class="conditional-field" id="homeworkOther">
+                        <input type="text" class="form-input" id="homeworkOtherText" placeholder="請輸入其他回家作業...">
                     </div>
                 </div>
             </div>
@@ -3041,26 +3090,18 @@
             const searchResults = document.getElementById('searchResults');
             const searchClear = document.getElementById('searchClear');
             
-            // 搜尋輸入
+            // 輸入時只顯示/隱藏清除按鈕（不自動搜尋）
             searchInput.addEventListener('input', function() {
                 const query = this.value.trim();
-                
-                // 顯示/隱藏清除按鈕
                 searchClear.classList.toggle('show', query.length > 0);
-                
-                // 防抖處理
-                clearTimeout(searchTimeout);
-                
-                // 至少輸入 2 個字才搜尋
-                if (query.length < 2) {
-                    searchResults.classList.remove('show');
-                    return;
+            });
+            
+            // 按 Enter 觸發搜尋
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    doSearch();
                 }
-                
-                // 延長防抖時間到 500ms
-                searchTimeout = setTimeout(() => {
-                    searchMembers(query);
-                }, 500);
             });
             
             // 點擊外部關閉搜尋結果
@@ -3070,9 +3111,9 @@
                 }
             });
             
-            // 焦點時顯示結果（如果有輸入）
+            // 焦點時顯示結果（如果有內容）
             searchInput.addEventListener('focus', function() {
-                if (this.value.trim().length >= 2 && searchResults.innerHTML) {
+                if (searchResults.innerHTML && searchResults.innerHTML.trim() !== '') {
                     searchResults.classList.add('show');
                 }
             });
@@ -3100,6 +3141,11 @@
                 document.getElementById('stretchToolOther').classList.toggle('show', this.checked);
             });
             
+            // 回家作業其他選項
+            document.getElementById('hw_other').addEventListener('change', function() {
+                document.getElementById('homeworkOther').classList.toggle('show', this.checked);
+            });
+            
             // 行政關心 radio 選擇
             document.querySelectorAll('input[name="needAdminFollowup"]').forEach(radio => {
                 radio.addEventListener('change', function() {
@@ -3123,6 +3169,21 @@
                     }
                 });
             });
+        }
+        
+        // 點擊搜尋按鈕或按 Enter 執行搜尋
+        function doSearch() {
+            const searchInput = document.getElementById('memberSearch');
+            const searchResults = document.getElementById('searchResults');
+            const query = searchInput.value.trim();
+            
+            if (query.length < 1) {
+                showToast('請輸入搜尋關鍵字', 'error');
+                searchInput.focus();
+                return;
+            }
+            
+            searchMembers(query);
         }
         
         // 搜尋會員
@@ -3325,7 +3386,7 @@
             const searchInput = document.getElementById('memberSearch');
             searchInput.disabled = false;
             searchInput.value = '';
-            searchInput.placeholder = '輸入會員編號或姓名搜尋（至少2字）...';
+            searchInput.placeholder = '輸入學員姓名或編號...';
             
             document.getElementById('memberInfoCard').classList.remove('show');
         }
@@ -4190,7 +4251,12 @@
             // 回家作業
             const homework = [];
             document.querySelectorAll('.homework-item input:checked').forEach(checkbox => {
-                homework.push(checkbox.value);
+                if (checkbox.value === 'other') {
+                    const otherText = document.getElementById('homeworkOtherText').value;
+                    if (otherText) homework.push(otherText);
+                } else {
+                    homework.push(checkbox.value);
+                }
             });
             
             return {
@@ -4346,6 +4412,16 @@
             ['tool_oil', 'tool_scraper', 'tool_cupping', 'tool_other'].forEach(id => {
                 document.getElementById(id).checked = false;
             });
+            // 重置其他欄位文字輸入
+            document.getElementById('mainComplaintOtherText') && (document.getElementById('mainComplaintOtherText').value = '');
+            document.getElementById('extendedAreasOtherText') && (document.getElementById('extendedAreasOtherText').value = '');
+            document.getElementById('stretchToolOtherText') && (document.getElementById('stretchToolOtherText').value = '');
+            document.getElementById('homeworkOtherText') && (document.getElementById('homeworkOtherText').value = '');
+            // 隱藏其他欄位
+            document.getElementById('mainComplaintOther')?.classList.remove('show');
+            document.getElementById('extendedAreasOther')?.classList.remove('show');
+            document.getElementById('stretchToolOther')?.classList.remove('show');
+            document.getElementById('homeworkOther')?.classList.remove('show');
             
             // 重置學員狀況
             document.getElementById('isLate_no').checked = true;
