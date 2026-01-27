@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>衡點健身 - 教練課表寫入系統</title>
+    <title>衡點健康 - 教練課表寫入系統</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
@@ -891,10 +891,12 @@
             font-weight: 500;
             cursor: pointer;
             transition: background 0.2s;
+            text-decoration: none;
         }
         
         .moti-album-btn:hover {
             background: var(--green-dark);
+            color: white;
         }
         
         .moti-images-grid {
@@ -3824,17 +3826,15 @@
                 const images = item.imageUrl.split(',').map(url => url.trim()).filter(url => url);
                 if (images.length > 0) {
                     const firstImage = images[0];
-                    const albumUrl = item.moti_folder || '';
+                    const albumUrl = `https://oxencust.github.io/moti-album/?id=${item.id}`;
                     imageHtml = `
                         <div class="moti-image-section">
                             <div class="moti-image-container">
                                 <img src="${firstImage}" alt="MOTI 3D 體態圖" onclick="openLightbox('${firstImage}')" onerror="this.parentElement.innerHTML='<div class=\\'moti-image-placeholder\\'><span>🖼️</span>圖片載入失敗</div>'">
                             </div>
-                            ${albumUrl ? `
-                            <button type="button" class="moti-album-btn" onclick="window.open('${albumUrl}', '_blank')">
+                            <a href="${albumUrl}" target="_blank" class="moti-album-btn">
                                 📷 查看全部照片 (${images.length}張)
-                            </button>
-                            ` : ''}
+                            </a>
                         </div>
                     `;
                 }
