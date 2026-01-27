@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>衡點健康 - 教練課表寫入系統</title>
+    <title>衡點健身 - 教練課表寫入系統</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
@@ -61,12 +61,16 @@
             box-sizing: border-box;
         }
         
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+        }
+        
         body {
             font-family: 'Noto Sans TC', sans-serif;
             background: linear-gradient(135deg, var(--green-light) 0%, var(--white) 50%, var(--blue-light) 100%);
             min-height: 100vh;
             color: var(--gray-dark);
-            padding-bottom: 100px;
         }
         
         /* 載入畫面 */
@@ -123,11 +127,6 @@
             background: var(--white);
             padding: var(--spacing-md);
             box-shadow: var(--shadow-sm);
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
         }
         
         .header-content {
@@ -196,8 +195,6 @@
             max-width: 600px;
             margin: 0 auto;
             padding: var(--spacing-md);
-            padding-top: 90px;  /* 補償 fixed header 高度 */
-            padding-bottom: 90px;  /* 補償 fixed bottom-actions 高度 */
         }
         
         /* 卡片 */
@@ -514,6 +511,29 @@
         .member-disease-alert span {
             color: var(--gray-dark);
             font-size: 14px;
+        }
+        
+        /* 諮詢備註 */
+        .member-notes-info {
+            margin-top: var(--spacing-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--blue-light);
+            border-radius: var(--radius-sm);
+            border-left: 4px solid var(--blue);
+        }
+        
+        .member-notes-info label {
+            color: var(--blue-dark);
+            font-size: 12px;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .member-notes-info span {
+            color: var(--gray-dark);
+            font-size: 14px;
+            line-height: 1.4;
         }
         
         /* MOTI/InBody 歷程按鈕 */
@@ -1408,14 +1428,9 @@
         
         /* 底部按鈕 */
         .bottom-actions {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
             background: var(--white);
             padding: var(--spacing-md);
             box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
-            z-index: 100;
         }
         
         .bottom-actions-content {
@@ -1699,8 +1714,6 @@
             .container {
                 max-width: 100%;
                 padding: var(--spacing-md);
-                padding-top: 90px;
-                padding-bottom: 90px;
             }
             
             .header-content {
@@ -1733,8 +1746,6 @@
             
             .container {
                 padding: var(--spacing-sm);
-                padding-top: 85px;
-                padding-bottom: 85px;
             }
             
             .card {
@@ -1858,10 +1869,6 @@
                 --spacing-lg: 16px;
             }
             
-            body {
-                padding-bottom: 90px;
-            }
-            
             .header {
                 padding: var(--spacing-sm) var(--spacing-md);
             }
@@ -1894,8 +1901,6 @@
             
             .container {
                 padding: var(--spacing-sm);
-                padding-top: 80px;
-                padding-bottom: 80px;
             }
             
             .card {
@@ -2457,6 +2462,10 @@
                 <div class="member-disease-alert" id="memberDiseaseAlert" style="display: none;">
                     <label>⚠️ 疾病史注意</label>
                     <span id="memberDisease">-</span>
+                </div>
+                <div class="member-notes-info" id="memberNotesInfo" style="display: none;">
+                    <label>📝 諮詢備註</label>
+                    <span id="memberNotes">-</span>
                 </div>
                 
                 <!-- MOTI 檢測歷程按鈕 -->
@@ -3364,6 +3373,15 @@
                 diseaseAlert.style.display = 'block';
             } else {
                 diseaseAlert.style.display = 'none';
+            }
+            
+            // 諮詢備註
+            const notesInfo = document.getElementById('memberNotesInfo');
+            if (member.consultation_notes && member.consultation_notes.trim() !== '') {
+                document.getElementById('memberNotes').textContent = member.consultation_notes;
+                notesInfo.style.display = 'block';
+            } else {
+                notesInfo.style.display = 'none';
             }
             
             document.getElementById('memberInfoCard').classList.add('show');
