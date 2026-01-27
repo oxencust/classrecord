@@ -889,11 +889,64 @@
             max-width: 100%;
             max-height: 200px;
             object-fit: contain;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .moti-image-container img:hover {
+            transform: scale(1.02);
         }
         
         /* InBody 圖片（報告通常較長） */
         .moti-image-container.inbody img {
             max-height: 280px;
+        }
+        
+        /* 圖片放大 Overlay */
+        .image-lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .image-lightbox.show {
+            display: flex;
+        }
+        
+        .image-lightbox img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: var(--radius-md);
+        }
+        
+        .image-lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-lightbox-close:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
         
         .moti-image-placeholder {
@@ -1031,6 +1084,110 @@
             border-left: 3px solid var(--blue);
             border-radius: var(--radius-sm);
             font-size: 13px;
+            color: var(--gray-dark);
+        }
+        
+        /* 骨骼檢測結果列表 */
+        .skeleton-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .skeleton-item {
+            display: flex;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--gray-light);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+        }
+        
+        .skeleton-item label {
+            font-weight: 600;
+            color: var(--green-dark);
+            min-width: 70px;
+        }
+        
+        .skeleton-item span {
+            color: var(--gray-dark);
+        }
+        
+        /* 肌肉狀態列表 */
+        .muscle-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .muscle-item {
+            display: flex;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--pink-light);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+        }
+        
+        .muscle-item .muscle-group {
+            font-weight: 600;
+            color: var(--pink-dark);
+            min-width: 50px;
+        }
+        
+        .muscle-item .muscle-detail {
+            color: var(--gray-dark);
+        }
+        
+        /* 教練列表 */
+        .coach-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .coach-item {
+            display: flex;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--green-light);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+        }
+        
+        .coach-item label {
+            font-weight: 600;
+            color: var(--green-dark);
+            min-width: 70px;
+        }
+        
+        .coach-item span {
+            color: var(--gray-dark);
+        }
+        
+        /* 其他建議列表 */
+        .other-suggest-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .suggest-item {
+            display: flex;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--blue-light);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+        }
+        
+        .suggest-item label {
+            font-weight: 600;
+            color: var(--blue-dark);
+            min-width: 80px;
+        }
+        
+        .suggest-item span {
             color: var(--gray-dark);
         }
         
@@ -2397,6 +2554,12 @@
     <!-- Toast 提示 -->
     <div class="toast" id="toast"></div>
     
+    <!-- 圖片放大 Lightbox -->
+    <div class="image-lightbox" id="imageLightbox" onclick="closeLightbox()">
+        <button class="image-lightbox-close" onclick="closeLightbox()">✕</button>
+        <img id="lightboxImage" src="" alt="放大圖片">
+    </div>
+    
     <!-- 頂部導航 -->
     <header class="header">
         <div class="header-content">
@@ -3610,88 +3773,171 @@
             const imageHtml = firstImageUrl ? `
                 <div class="moti-image-section">
                     <div class="moti-image-container">
-                        <img src="${firstImageUrl}" alt="MOTI 3D 體態圖" onerror="this.parentElement.innerHTML='<div class=\\'moti-image-placeholder\\'><span>🖼️</span>圖片載入失敗</div>'">
+                        <img src="${firstImageUrl}" alt="MOTI 3D 體態圖" onclick="openLightbox(this.src)" onerror="this.parentElement.innerHTML='<div class=\\'moti-image-placeholder\\'><span>🖼️</span>圖片載入失敗</div>'">
                     </div>
                 </div>
-            ` : `
-                <div class="moti-image-section">
-                    <div class="moti-image-container">
-                        <div class="moti-image-placeholder">
-                            <span>🖼️</span>
-                            無體態圖片
-                        </div>
+            ` : '';
+            
+            // 期望目標
+            const goalsHtml = item.goals ? `
+                <div class="moti-detail-section">
+                    <div class="moti-detail-title">🎯 期望目標</div>
+                    <div class="moti-notes">${item.goals}</div>
+                </div>
+            ` : '';
+            
+            // 短期目標
+            const shortTermGoalHtml = item.short_term_goal ? `
+                <div class="moti-detail-section">
+                    <div class="moti-detail-title">📌 短期目標</div>
+                    <div class="moti-notes">${item.short_term_goal}</div>
+                </div>
+            ` : '';
+            
+            // 疾病史/關節問題
+            const diseaseHtml = (item.diseases || item.joint_issues) ? `
+                <div class="moti-detail-section">
+                    <div class="moti-detail-title">⚠️ 受傷/疾病史/手術紀錄</div>
+                    <div class="moti-notes" style="background: var(--pink-light); border-color: var(--pink);">
+                        ${item.diseases || ''}${item.diseases && item.joint_issues ? '<br>' : ''}${item.joint_issues ? '關節問題: ' + item.joint_issues : ''}
                     </div>
                 </div>
-            `;
+            ` : '';
             
             // 風險排名
             const risks = [item.risk_1, item.risk_2, item.risk_3].filter(r => r && r.trim());
-            const risksHtml = risks.length > 0 ? 
-                risks.map((r, i) => `<span class="moti-muscle-tag tight">${i+1}. ${r}</span>`).join('') :
-                '<span class="moti-muscle-tag" style="background:#e8e8e8;color:#666;">無</span>';
-            
-            // 建議課程
-            const coursesHtml = `
-                <div class="moti-detail-grid" style="grid-template-columns: repeat(4, 1fr);">
-                    <div class="moti-detail-item highlight">
-                        <label>總堂數</label>
-                        <span>${item.total_courses || '-'}</span>
-                    </div>
-                    <div class="moti-detail-item">
-                        <label>重訓</label>
-                        <span>${item.weight_training_courses || '-'}</span>
-                    </div>
-                    <div class="moti-detail-item">
-                        <label>皮拉提斯</label>
-                        <span>${item.pilates_training_courses || '-'}</span>
-                    </div>
-                    <div class="moti-detail-item">
-                        <label>伸展</label>
-                        <span>${item.stretch_courses || '-'}</span>
+            const risksHtml = risks.length > 0 ? `
+                <div class="moti-detail-section">
+                    <div class="moti-detail-title">⚠️ 風險排名</div>
+                    <div class="moti-muscle-tags">
+                        ${risks.map((r, i) => `<span class="moti-muscle-tag tight">${i+1}. ${r}</span>`).join('')}
                     </div>
                 </div>
-            `;
+            ` : '';
+            
+            // 骨骼檢測結果
+            let skeletonHtml = '';
+            if (item.skeleton_data) {
+                try {
+                    const skeleton = typeof item.skeleton_data === 'string' ? JSON.parse(item.skeleton_data) : item.skeleton_data;
+                    const skeletonItems = [];
+                    
+                    if (skeleton.scoliosis) skeletonItems.push(`<div class="skeleton-item"><label>脊椎側彎</label><span>${skeleton.scoliosis}</span></div>`);
+                    if (skeleton.cervicalStatus) skeletonItems.push(`<div class="skeleton-item"><label>頸椎</label><span>${skeleton.cervicalStatus}${skeleton.cervicalDegree ? ' ' + skeleton.cervicalDegree + '°' : ''}</span></div>`);
+                    if (skeleton.shrug || skeleton.roundShoulder || skeleton.scapula || skeleton.humerus) {
+                        const shoulderParts = [];
+                        if (skeleton.shrug) shoulderParts.push('聳肩:' + skeleton.shrug);
+                        if (skeleton.roundShoulder) shoulderParts.push('圓肩:' + skeleton.roundShoulder + (skeleton.roundShoulderDegree ? ' ' + skeleton.roundShoulderDegree + '°' : ''));
+                        if (skeleton.scapula) shoulderParts.push('肩胛:' + skeleton.scapula);
+                        if (skeleton.humerus) shoulderParts.push('肱骨:' + skeleton.humerus);
+                        skeletonItems.push(`<div class="skeleton-item"><label>肩膀</label><span>${shoulderParts.join(' ')}</span></div>`);
+                    }
+                    if (skeleton.thoracicStatus) skeletonItems.push(`<div class="skeleton-item"><label>胸椎</label><span>${skeleton.thoracicStatus}${skeleton.thoracicDegree ? ' ' + skeleton.thoracicDegree + '°' : ''}</span></div>`);
+                    if (skeleton.pelvisTilt || skeleton.pelvisSide || skeleton.pelvisRotation) {
+                        const pelvisParts = [];
+                        if (skeleton.pelvisTilt) pelvisParts.push('前後傾:' + skeleton.pelvisTilt);
+                        if (skeleton.pelvisSide) pelvisParts.push('左右:' + skeleton.pelvisSide);
+                        if (skeleton.pelvisRotation) pelvisParts.push('旋轉:' + skeleton.pelvisRotation + (skeleton.pelvisRotationDegree ? ' ' + skeleton.pelvisRotationDegree + '°' : ''));
+                        skeletonItems.push(`<div class="skeleton-item"><label>骨盆</label><span>${pelvisParts.join(' ')}</span></div>`);
+                    }
+                    if (skeleton.leftKnee || skeleton.rightKnee) {
+                        skeletonItems.push(`<div class="skeleton-item"><label>膝蓋</label><span>左:${skeleton.leftKnee || '-'} 右:${skeleton.rightKnee || '-'}</span></div>`);
+                    }
+                    if (skeleton.arch || skeleton.footRotation) {
+                        skeletonItems.push(`<div class="skeleton-item"><label>足</label><span>${skeleton.arch || ''}${skeleton.arch && skeleton.footRotation ? ' ' : ''}${skeleton.footRotation || ''}</span></div>`);
+                    }
+                    if (skeleton.hip || skeleton.kneeStability || skeleton.ankleStability) {
+                        const jointParts = [];
+                        if (skeleton.hip) jointParts.push('髖:' + skeleton.hip);
+                        if (skeleton.kneeStability) jointParts.push('膝:' + skeleton.kneeStability);
+                        if (skeleton.ankleStability) jointParts.push('踝:' + skeleton.ankleStability);
+                        skeletonItems.push(`<div class="skeleton-item"><label>關節狀態</label><span>${jointParts.join(' ')}</span></div>`);
+                    }
+                    
+                    if (skeletonItems.length > 0) {
+                        skeletonHtml = `
+                            <div class="moti-detail-section">
+                                <div class="moti-detail-title">🦴 檢測結果</div>
+                                <div class="skeleton-list">${skeletonItems.join('')}</div>
+                            </div>
+                        `;
+                    }
+                } catch (e) {
+                    console.error('解析骨骼資料失敗:', e);
+                }
+            }
+            
+            // 肌肉狀態
+            let muscleHtml = '';
+            if (item.muscle_data) {
+                try {
+                    const muscleData = typeof item.muscle_data === 'string' ? JSON.parse(item.muscle_data) : item.muscle_data;
+                    const groupNames = {
+                        'shoulder': '肩膀', 'chest': '胸部', 'back': '背部',
+                        'core': '核心', 'arm': '手臂', 'leg': '腿部', 'other': '其他'
+                    };
+                    
+                    const muscleItems = [];
+                    Object.keys(muscleData).forEach(group => {
+                        const muscles = muscleData[group];
+                        if (Array.isArray(muscles)) {
+                            muscles.forEach(m => {
+                                if (m.name || m.status) {
+                                    const parts = [];
+                                    if (m.name) parts.push(m.name);
+                                    if (m.status) parts.push(m.status);
+                                    if (m.side) parts.push(m.side);
+                                    if (m.level) parts.push(m.level + '級');
+                                    if (m.suggest) parts.push('建議:' + m.suggest);
+                                    if (m.note) parts.push('備註:' + m.note);
+                                    muscleItems.push(`<div class="muscle-item"><span class="muscle-group">${groupNames[group] || group}</span><span class="muscle-detail">${parts.join(' ')}</span></div>`);
+                                }
+                            });
+                        }
+                    });
+                    
+                    if (muscleItems.length > 0) {
+                        muscleHtml = `
+                            <div class="moti-detail-section">
+                                <div class="moti-detail-title">💪 肌肉狀態</div>
+                                <div class="muscle-list">${muscleItems.join('')}</div>
+                            </div>
+                        `;
+                    }
+                } catch (e) {
+                    console.error('解析肌肉資料失敗:', e);
+                }
+            }
+            
+            // 其他建議
+            const otherSuggestHtml = (item.functional_training || item.fascia_release) ? `
+                <div class="moti-detail-section">
+                    <div class="moti-detail-title">📝 其他建議</div>
+                    <div class="other-suggest-list">
+                        ${item.functional_training ? `<div class="suggest-item"><label>功能性訓練</label><span>${item.functional_training}</span></div>` : ''}
+                        ${item.fascia_release ? `<div class="suggest-item"><label>筋膜放鬆</label><span>${item.fascia_release}</span></div>` : ''}
+                    </div>
+                </div>
+            ` : '';
+            
+            // 注意事項
+            const precautionsHtml = item.precautions ? `
+                <div class="moti-detail-section">
+                    <div class="moti-detail-title">⚡ 特別注意</div>
+                    <div class="moti-notes" style="background: var(--pink-light); border-color: var(--pink);">${item.precautions}</div>
+                </div>
+            ` : '';
             
             return `
                 ${imageHtml}
-                
-                <div class="moti-detail-section">
-                    <div class="moti-detail-title">⚠️ 風險排名</div>
-                    <div class="moti-muscle-tags">${risksHtml}</div>
-                </div>
-                
-                ${item.short_term_goal ? `
-                <div class="moti-detail-section">
-                    <div class="moti-detail-title">🎯 短期目標</div>
-                    <div class="moti-notes">${item.short_term_goal}</div>
-                </div>
-                ` : ''}
-                
-                <div class="moti-detail-section">
-                    <div class="moti-detail-title">📋 建議課程堂數</div>
-                    ${coursesHtml}
-                </div>
-                
-                ${item.functional_training ? `
-                <div class="moti-detail-section">
-                    <div class="moti-detail-title">💪 建議功能訓練</div>
-                    <div class="moti-notes">${item.functional_training}</div>
-                </div>
-                ` : ''}
-                
-                ${item.fascia_release ? `
-                <div class="moti-detail-section">
-                    <div class="moti-detail-title">🧘 建議筋膜放鬆</div>
-                    <div class="moti-notes">${item.fascia_release}</div>
-                </div>
-                ` : ''}
-                
-                ${item.precautions ? `
-                <div class="moti-detail-section">
-                    <div class="moti-detail-title">⚡ 注意事項</div>
-                    <div class="moti-notes" style="background: var(--pink-light); border-color: var(--pink);">${item.precautions}</div>
-                </div>
-                ` : ''}
+                ${goalsHtml}
+                ${shortTermGoalHtml}
+                ${diseaseHtml}
+                ${risksHtml}
+                ${skeletonHtml}
+                ${muscleHtml}
+                ${otherSuggestHtml}
+                ${precautionsHtml}
             `;
         }
         
@@ -3811,7 +4057,7 @@
                 return `
                     <div class="moti-image-section" style="margin-bottom: 0;">
                         <div class="moti-image-container inbody">
-                            <img src="${item.imageUrl}" alt="InBody 檢測報告" onerror="this.parentElement.innerHTML='<div class=\\'moti-image-placeholder\\'><span>📄</span>圖片載入失敗</div>'">
+                            <img src="${item.imageUrl}" alt="InBody 檢測報告" onclick="openLightbox(this.src)" onerror="this.parentElement.innerHTML='<div class=\\'moti-image-placeholder\\'><span>📄</span>圖片載入失敗</div>'">
                         </div>
                     </div>
                 `;
@@ -4541,6 +4787,28 @@
                 initStarRating(container);
             });
         }
+        
+        // 圖片放大功能
+        function openLightbox(src) {
+            const lightbox = document.getElementById('imageLightbox');
+            const img = document.getElementById('lightboxImage');
+            img.src = src;
+            lightbox.classList.add('show');
+            document.body.style.overflow = 'hidden'; // 防止背景滾動
+        }
+        
+        function closeLightbox() {
+            const lightbox = document.getElementById('imageLightbox');
+            lightbox.classList.remove('show');
+            document.body.style.overflow = ''; // 恢復滾動
+        }
+        
+        // ESC 鍵關閉放大圖片
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeLightbox();
+            }
+        });
         
         function showToast(message, type = 'info') {
             const toast = document.getElementById('toast');
