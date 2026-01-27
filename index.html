@@ -3794,12 +3794,12 @@
                 </div>
             ` : '';
             
-            // 疾病史/關節問題
-            const diseaseHtml = (item.diseases || item.joint_issues) ? `
+            // 疾病史
+            const diseaseHtml = item.diseases ? `
                 <div class="moti-detail-section">
                     <div class="moti-detail-title">⚠️ 受傷/疾病史/手術紀錄</div>
                     <div class="moti-notes" style="background: var(--pink-light); border-color: var(--pink);">
-                        ${item.diseases || ''}${item.diseases && item.joint_issues ? '<br>' : ''}${item.joint_issues ? '關節問題: ' + item.joint_issues : ''}
+                        ${item.diseases}
                     </div>
                 </div>
             ` : '';
@@ -3817,54 +3817,49 @@
             
             // 骨骼檢測結果
             let skeletonHtml = '';
-            if (item.skeleton_data) {
-                try {
-                    const skeleton = typeof item.skeleton_data === 'string' ? JSON.parse(item.skeleton_data) : item.skeleton_data;
-                    const skeletonItems = [];
-                    
-                    if (skeleton.scoliosis) skeletonItems.push(`<div class="skeleton-item"><label>脊椎側彎</label><span>${skeleton.scoliosis}</span></div>`);
-                    if (skeleton.cervicalStatus) skeletonItems.push(`<div class="skeleton-item"><label>頸椎</label><span>${skeleton.cervicalStatus}${skeleton.cervicalDegree ? ' ' + skeleton.cervicalDegree + '°' : ''}</span></div>`);
-                    if (skeleton.shrug || skeleton.roundShoulder || skeleton.scapula || skeleton.humerus) {
-                        const shoulderParts = [];
-                        if (skeleton.shrug) shoulderParts.push('聳肩:' + skeleton.shrug);
-                        if (skeleton.roundShoulder) shoulderParts.push('圓肩:' + skeleton.roundShoulder + (skeleton.roundShoulderDegree ? ' ' + skeleton.roundShoulderDegree + '°' : ''));
-                        if (skeleton.scapula) shoulderParts.push('肩胛:' + skeleton.scapula);
-                        if (skeleton.humerus) shoulderParts.push('肱骨:' + skeleton.humerus);
-                        skeletonItems.push(`<div class="skeleton-item"><label>肩膀</label><span>${shoulderParts.join(' ')}</span></div>`);
-                    }
-                    if (skeleton.thoracicStatus) skeletonItems.push(`<div class="skeleton-item"><label>胸椎</label><span>${skeleton.thoracicStatus}${skeleton.thoracicDegree ? ' ' + skeleton.thoracicDegree + '°' : ''}</span></div>`);
-                    if (skeleton.pelvisTilt || skeleton.pelvisSide || skeleton.pelvisRotation) {
-                        const pelvisParts = [];
-                        if (skeleton.pelvisTilt) pelvisParts.push('前後傾:' + skeleton.pelvisTilt);
-                        if (skeleton.pelvisSide) pelvisParts.push('左右:' + skeleton.pelvisSide);
-                        if (skeleton.pelvisRotation) pelvisParts.push('旋轉:' + skeleton.pelvisRotation + (skeleton.pelvisRotationDegree ? ' ' + skeleton.pelvisRotationDegree + '°' : ''));
-                        skeletonItems.push(`<div class="skeleton-item"><label>骨盆</label><span>${pelvisParts.join(' ')}</span></div>`);
-                    }
-                    if (skeleton.leftKnee || skeleton.rightKnee) {
-                        skeletonItems.push(`<div class="skeleton-item"><label>膝蓋</label><span>左:${skeleton.leftKnee || '-'} 右:${skeleton.rightKnee || '-'}</span></div>`);
-                    }
-                    if (skeleton.arch || skeleton.footRotation) {
-                        skeletonItems.push(`<div class="skeleton-item"><label>足</label><span>${skeleton.arch || ''}${skeleton.arch && skeleton.footRotation ? ' ' : ''}${skeleton.footRotation || ''}</span></div>`);
-                    }
-                    if (skeleton.hip || skeleton.kneeStability || skeleton.ankleStability) {
-                        const jointParts = [];
-                        if (skeleton.hip) jointParts.push('髖:' + skeleton.hip);
-                        if (skeleton.kneeStability) jointParts.push('膝:' + skeleton.kneeStability);
-                        if (skeleton.ankleStability) jointParts.push('踝:' + skeleton.ankleStability);
-                        skeletonItems.push(`<div class="skeleton-item"><label>關節狀態</label><span>${jointParts.join(' ')}</span></div>`);
-                    }
-                    
-                    if (skeletonItems.length > 0) {
-                        skeletonHtml = `
-                            <div class="moti-detail-section">
-                                <div class="moti-detail-title">🦴 檢測結果</div>
-                                <div class="skeleton-list">${skeletonItems.join('')}</div>
-                            </div>
-                        `;
-                    }
-                } catch (e) {
-                    console.error('解析骨骼資料失敗:', e);
-                }
+            const skeletonItems = [];
+            
+            if (item.scoliosis) skeletonItems.push(`<div class="skeleton-item"><label>脊椎側彎</label><span>${item.scoliosis}</span></div>`);
+            if (item.cervical_status) skeletonItems.push(`<div class="skeleton-item"><label>頸椎</label><span>${item.cervical_status}${item.cervical_degree ? ' ' + item.cervical_degree + '°' : ''}</span></div>`);
+            
+            // 肩膀
+            const shoulderParts = [];
+            if (item.shrug) shoulderParts.push('聳肩:' + item.shrug);
+            if (item.round_shoulder) shoulderParts.push('圓肩:' + item.round_shoulder + (item.round_shoulder_degree ? ' ' + item.round_shoulder_degree + '°' : ''));
+            if (item.scapula) shoulderParts.push('肩胛:' + item.scapula);
+            if (item.humerus) shoulderParts.push('肱骨:' + item.humerus);
+            if (shoulderParts.length > 0) skeletonItems.push(`<div class="skeleton-item"><label>肩膀</label><span>${shoulderParts.join(' ')}</span></div>`);
+            
+            if (item.thoracic_status) skeletonItems.push(`<div class="skeleton-item"><label>胸椎</label><span>${item.thoracic_status}${item.thoracic_degree ? ' ' + item.thoracic_degree + '°' : ''}</span></div>`);
+            
+            // 骨盆
+            const pelvisParts = [];
+            if (item.pelvis_tilt) pelvisParts.push('前後傾:' + item.pelvis_tilt);
+            if (item.pelvis_side) pelvisParts.push('左右:' + item.pelvis_side);
+            if (item.pelvis_rotation) pelvisParts.push('旋轉:' + item.pelvis_rotation + (item.pelvis_rotation_degree ? ' ' + item.pelvis_rotation_degree + '°' : ''));
+            if (pelvisParts.length > 0) skeletonItems.push(`<div class="skeleton-item"><label>骨盆</label><span>${pelvisParts.join(' ')}</span></div>`);
+            
+            if (item.left_knee || item.right_knee) {
+                skeletonItems.push(`<div class="skeleton-item"><label>膝蓋</label><span>左:${item.left_knee || '-'} 右:${item.right_knee || '-'}</span></div>`);
+            }
+            if (item.arch || item.foot_rotation) {
+                skeletonItems.push(`<div class="skeleton-item"><label>足</label><span>${item.arch || ''}${item.arch && item.foot_rotation ? ' ' : ''}${item.foot_rotation || ''}</span></div>`);
+            }
+            
+            // 關節狀態
+            const jointParts = [];
+            if (item.hip) jointParts.push('髖:' + item.hip);
+            if (item.knee_stability) jointParts.push('膝:' + item.knee_stability);
+            if (item.ankle_stability) jointParts.push('踝:' + item.ankle_stability);
+            if (jointParts.length > 0) skeletonItems.push(`<div class="skeleton-item"><label>關節狀態</label><span>${jointParts.join(' ')}</span></div>`);
+            
+            if (skeletonItems.length > 0) {
+                skeletonHtml = `
+                    <div class="moti-detail-section">
+                        <div class="moti-detail-title">🦴 檢測結果</div>
+                        <div class="skeleton-list">${skeletonItems.join('')}</div>
+                    </div>
+                `;
             }
             
             // 肌肉狀態
