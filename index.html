@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>衡點健身 - 教練課表寫入系統</title>
+    <title>衡點健康 - 教練課表寫入系統</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
@@ -859,7 +859,7 @@
         }
         
         .moti-timeline-item.active .moti-timeline-detail {
-            max-height: 1200px;
+            max-height: 3000px;
         }
         
         .moti-detail-content {
@@ -3829,13 +3829,14 @@
         }
         
         function generateMotiDetailHtml(item) {
-            // 處理圖片 - 顯示第一張 + 查看全部按鈕
+            // 處理圖片 - moti_images 是逗號分隔的完整圖片 URL
             let imageHtml = '';
+            const albumUrl = `https://oxencust.github.io/moti-album/?id=${item.id}`;
+            
             if (item.imageUrl) {
                 const images = item.imageUrl.split(',').map(url => url.trim()).filter(url => url);
                 if (images.length > 0) {
                     const firstImage = images[0];
-                    const albumUrl = `https://oxencust.github.io/moti-album/?id=${item.id}`;
                     imageHtml = `
                         <div class="moti-image-section">
                             <div class="moti-image-container">
@@ -3846,7 +3847,25 @@
                             </a>
                         </div>
                     `;
+                } else {
+                    // 沒有圖片但有 id，還是顯示相簿按鈕
+                    imageHtml = `
+                        <div class="moti-image-section">
+                            <a href="${albumUrl}" target="_blank" class="moti-album-btn">
+                                📷 查看相簿
+                            </a>
+                        </div>
+                    `;
                 }
+            } else {
+                // 沒有 imageUrl 但有 id，還是顯示相簿按鈕
+                imageHtml = `
+                    <div class="moti-image-section">
+                        <a href="${albumUrl}" target="_blank" class="moti-album-btn">
+                            📷 查看相簿
+                        </a>
+                    </div>
+                `;
             }
             
             // 期望目標
