@@ -4148,8 +4148,19 @@
                 document.getElementById('inbodyLoading').style.display = 'none';
                 
                 if (result.success && result.data && result.data.length > 0) {
-                    inbodyHistoryData = result.data;
-                    renderInbodyTimeline(result.data);
+                    // 過濾掉無效資料（沒有 id 或沒有有效日期）
+                    const validData = result.data.filter(item => {
+                        if (!item.id) return false;
+                        if (!item.date || item.date === '' || item.date === '1970-01-01') return false;
+                        return true;
+                    });
+                    
+                    if (validData.length > 0) {
+                        inbodyHistoryData = validData;
+                        renderInbodyTimeline(validData);
+                    } else {
+                        document.getElementById('inbodyEmpty').style.display = 'block';
+                    }
                 } else {
                     document.getElementById('inbodyEmpty').style.display = 'block';
                 }
