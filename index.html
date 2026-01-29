@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>衡點健康 - 教練課表寫入系統</title>
+    <title>衡點健身 - 教練課表寫入系統</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
@@ -267,6 +267,17 @@
         
         input[type="date"], input[type="time"] {
             min-width: 0;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        
+        /* 手機版日期時間特別處理 */
+        @media (max-width: 480px) {
+            .datetime-row .form-input {
+                padding: 10px 8px;
+                font-size: 14px;
+            }
         }
         
         .form-input:focus, .form-select:focus, .form-textarea:focus {
@@ -711,6 +722,39 @@
         
         .modal-tab-content.active {
             display: block;
+        }
+        
+        /* 課種篩選列 */
+        .class-filter-bar {
+            display: flex;
+            gap: 8px;
+            padding: 12px 0;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--gray-light);
+            flex-wrap: wrap;
+        }
+        
+        .class-filter-btn {
+            padding: 6px 12px;
+            border: 2px solid var(--gray-light);
+            border-radius: var(--radius-full);
+            background: var(--white);
+            color: var(--gray);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .class-filter-btn:hover {
+            border-color: var(--green);
+            color: var(--green);
+        }
+        
+        .class-filter-btn.active {
+            background: var(--green);
+            border-color: var(--green);
+            color: var(--white);
         }
         
         /* 時間線載入與空狀態 */
@@ -1895,9 +1939,16 @@
         }
         
         .datetime-row .form-group {
-            flex: 1;
+            flex: 1 1 0;
             margin-bottom: 0;
             min-width: 0;
+            max-width: 50%;
+        }
+        
+        .datetime-row .form-input {
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
         }
         
         /* 小標題 */
@@ -2738,6 +2789,9 @@
                             <button type="button" class="modal-tab" data-tab="inbody" onclick="switchModalTab('inbody')">
                                 📏 InBody
                             </button>
+                            <button type="button" class="modal-tab" data-tab="classHistory" onclick="switchModalTab('classHistory')">
+                                📋 課表紀錄
+                            </button>
                         </div>
                         
                         <!-- MOTI 時間線 -->
@@ -2764,6 +2818,26 @@
                                 <p>尚無 InBody 檢測記錄</p>
                             </div>
                             <div class="moti-timeline" id="inbodyTimelineContent"></div>
+                        </div>
+                        
+                        <!-- 課表紀錄時間線 -->
+                        <div class="modal-tab-content" id="classHistoryTabContent">
+                            <!-- 課種篩選 -->
+                            <div class="class-filter-bar">
+                                <button type="button" class="class-filter-btn active" data-filter="all" onclick="filterClassHistory('all')">全部</button>
+                                <button type="button" class="class-filter-btn" data-filter="strength_training" onclick="filterClassHistory('strength_training')">💪 重訓</button>
+                                <button type="button" class="class-filter-btn" data-filter="pilates" onclick="filterClassHistory('pilates')">🧘 皮拉提斯</button>
+                                <button type="button" class="class-filter-btn" data-filter="stretching" onclick="filterClassHistory('stretching')">🤸 伸展</button>
+                            </div>
+                            <div class="moti-timeline-loading" id="classHistoryLoading">
+                                <div class="spinner-small"></div>
+                                <span>載入中...</span>
+                            </div>
+                            <div class="moti-timeline-empty" id="classHistoryEmpty" style="display: none;">
+                                <span>📭</span>
+                                <p>尚無課表紀錄</p>
+                            </div>
+                            <div class="moti-timeline" id="classHistoryTimelineContent"></div>
                         </div>
                     </div>
                 </div>
@@ -3653,10 +3727,13 @@
         }
         
         // ============================================
-        // MOTI / InBody 檢測歷程彈窗
+        // MOTI / InBody / 課表紀錄 歷程彈窗
         // ============================================
         let motiHistoryData = [];
         let inbodyHistoryData = [];
+        let classHistoryData = [];
+        let classHistoryLoaded = false;
+        let currentClassFilter = 'all';
         
         function openMotiModal() {
             if (!selectedMember) {
@@ -3673,7 +3750,9 @@
                 <div class="id">會員編號：${selectedMember.id}</div>
             `;
             
-            // 重置標籤
+            // 重置標籤和狀態
+            classHistoryLoaded = false;
+            currentClassFilter = 'all';
             switchModalTab('moti');
             
             // 載入資料
@@ -3694,6 +3773,12 @@
             // 更新內容顯示
             document.getElementById('motiTabContent').classList.toggle('active', tab === 'moti');
             document.getElementById('inbodyTabContent').classList.toggle('active', tab === 'inbody');
+            document.getElementById('classHistoryTabContent').classList.toggle('active', tab === 'classHistory');
+            
+            // 切換到課表紀錄時載入資料
+            if (tab === 'classHistory' && selectedMember && !classHistoryLoaded) {
+                loadClassHistory(selectedMember.id);
+            }
         }
         
         // 點擊彈窗外部關閉
@@ -4266,6 +4351,283 @@
                         </div>
                     </div>
                 `;
+            }
+        }
+        
+        // ============================================
+        // 課表紀錄歷程
+        // ============================================
+        async function loadClassHistory(memberId) {
+            document.getElementById('classHistoryLoading').style.display = 'flex';
+            document.getElementById('classHistoryEmpty').style.display = 'none';
+            document.getElementById('classHistoryTimelineContent').innerHTML = '';
+            
+            try {
+                const response = await fetch(CONFIG.WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'getClassHistory',
+                        memberId: memberId
+                    })
+                });
+                
+                const result = await response.json();
+                document.getElementById('classHistoryLoading').style.display = 'none';
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    // 過濾掉無效資料
+                    const validData = result.data.filter(item => {
+                        if (!item.id) return false;
+                        if (!item.class_date || item.class_date === '' || item.class_date === '1970-01-01') return false;
+                        return true;
+                    });
+                    
+                    if (validData.length > 0) {
+                        classHistoryData = validData;
+                        classHistoryLoaded = true;
+                        renderClassHistoryTimeline(validData);
+                    } else {
+                        document.getElementById('classHistoryEmpty').style.display = 'block';
+                    }
+                } else {
+                    document.getElementById('classHistoryEmpty').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('查詢課表紀錄失敗:', error);
+                document.getElementById('classHistoryLoading').style.display = 'none';
+                document.getElementById('classHistoryEmpty').style.display = 'block';
+            }
+        }
+        
+        function filterClassHistory(filter) {
+            currentClassFilter = filter;
+            
+            // 更新篩選按鈕樣式
+            document.querySelectorAll('.class-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
+            
+            // 篩選並重新渲染
+            const filteredData = filter === 'all' 
+                ? classHistoryData 
+                : classHistoryData.filter(item => item.class_type === filter);
+            
+            if (filteredData.length > 0) {
+                document.getElementById('classHistoryEmpty').style.display = 'none';
+                renderClassHistoryTimeline(filteredData);
+            } else {
+                document.getElementById('classHistoryTimelineContent').innerHTML = '';
+                document.getElementById('classHistoryEmpty').style.display = 'block';
+            }
+        }
+        
+        function renderClassHistoryTimeline(data) {
+            const container = document.getElementById('classHistoryTimelineContent');
+            
+            const classTypeNames = {
+                'strength_training': '💪 重訓',
+                'pilates': '🧘 皮拉提斯',
+                'stretching': '🤸 伸展'
+            };
+            
+            const html = data.map((item, index) => {
+                const date = new Date(item.class_date);
+                const formattedDate = `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2,'0')}/${date.getDate().toString().padStart(2,'0')}`;
+                const isLatest = index === 0;
+                const detailHtml = generateClassHistoryDetailHtml(item);
+                const classTypeName = classTypeNames[item.class_type] || item.class_type;
+                
+                return `
+                    <div class="moti-timeline-item" data-index="${index}">
+                        <div class="moti-timeline-dot"></div>
+                        <div class="moti-timeline-header" onclick="toggleClassHistoryDetail(${index})">
+                            <div class="moti-timeline-date">
+                                <span class="date">${formattedDate} ${item.class_time || ''}</span>
+                                ${isLatest ? '<span class="badge">最新</span>' : ''}
+                            </div>
+                            <div class="moti-timeline-summary">
+                                ${classTypeName} · ${item.coach_name || '未指定教練'}
+                            </div>
+                            <span class="moti-timeline-arrow">›</span>
+                        </div>
+                        <div class="moti-timeline-detail">
+                            <div class="moti-detail-content">
+                                ${detailHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html;
+        }
+        
+        function generateClassHistoryDetailHtml(item) {
+            const classTypeNames = {
+                'strength_training': '💪 重訓',
+                'pilates': '🧘 皮拉提斯',
+                'stretching': '🤸 伸展'
+            };
+            
+            // 課程基本資訊
+            let html = `
+                <div class="moti-detail-section">
+                    <div class="moti-detail-title">📋 課程資訊</div>
+                    <div class="skeleton-list">
+                        <div class="skeleton-item"><label>課種</label><span>${classTypeNames[item.class_type] || item.class_type}</span></div>
+                        <div class="skeleton-item"><label>教練</label><span>${item.coach_name || '-'}</span></div>
+                        <div class="skeleton-item"><label>課程長度</label><span>${item.duration_minutes || 60} 分鐘</span></div>
+                        ${item.training_purpose ? `<div class="skeleton-item"><label>訓練目的</label><span>${item.training_purpose}</span></div>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            // 訓練內容
+            if (item.training_details) {
+                let details;
+                try {
+                    details = typeof item.training_details === 'string' ? JSON.parse(item.training_details) : item.training_details;
+                } catch (e) {
+                    details = null;
+                }
+                
+                if (details) {
+                    if (item.class_type === 'strength_training' && details.exercises) {
+                        // 重訓動作
+                        html += `
+                            <div class="moti-detail-section">
+                                <div class="moti-detail-title">🏋️ 訓練動作</div>
+                                <div class="skeleton-list">
+                        `;
+                        details.exercises.forEach((ex, i) => {
+                            const setsInfo = ex.sets ? ex.sets.map(s => `${s.weight}kg×${s.reps}`).join(', ') : '';
+                            html += `<div class="skeleton-item"><label>${i+1}. ${ex.name || '-'}</label><span>${ex.equipment || ''} ${setsInfo}</span></div>`;
+                        });
+                        html += `</div></div>`;
+                        
+                        // 進步星數
+                        if (details.progressRating) {
+                            html += `
+                                <div class="moti-detail-section">
+                                    <div class="moti-detail-title">⭐ 進步星數</div>
+                                    <div class="moti-notes">${'⭐'.repeat(parseInt(details.progressRating) || 0)} (${details.progressRating}/5)</div>
+                                </div>
+                            `;
+                        }
+                    } else if (item.class_type === 'pilates' && details.pi_movements) {
+                        // 皮拉提斯動作
+                        html += `
+                            <div class="moti-detail-section">
+                                <div class="moti-detail-title">🧘 訓練動作</div>
+                                <div class="skeleton-list">
+                        `;
+                        details.pi_movements.forEach((mv, i) => {
+                            html += `<div class="skeleton-item"><label>${i+1}. ${mv.name || '-'}</label><span>${mv.pi_equipment || ''} ${mv.reps || ''}下 ${mv.sets || ''}組</span></div>`;
+                        });
+                        html += `</div></div>`;
+                        
+                        // 進步啞鈴
+                        if (details.pi_progressRating) {
+                            html += `
+                                <div class="moti-detail-section">
+                                    <div class="moti-detail-title">🏅 進步啞鈴</div>
+                                    <div class="moti-notes">${'🏋️'.repeat(parseInt(details.pi_progressRating) || 0)} (${details.pi_progressRating}/5)</div>
+                                </div>
+                            `;
+                        }
+                    } else if (item.class_type === 'stretching') {
+                        // 伸展
+                        if (details.mainComplaint) {
+                            html += `
+                                <div class="moti-detail-section">
+                                    <div class="moti-detail-title">📍 主訴部位</div>
+                                    <div class="moti-notes">${details.mainComplaint}</div>
+                                </div>
+                            `;
+                        }
+                        if (details.extendedParts && details.extendedParts.length > 0) {
+                            html += `
+                                <div class="moti-detail-section">
+                                    <div class="moti-detail-title">🔗 延伸部位</div>
+                                    <div class="moti-notes">${details.extendedParts.join(', ')}</div>
+                                </div>
+                            `;
+                        }
+                        if (details.tools && details.tools.length > 0) {
+                            html += `
+                                <div class="moti-detail-section">
+                                    <div class="moti-detail-title">🛠️ 使用輔具</div>
+                                    <div class="moti-notes">${details.tools.join(', ')}</div>
+                                </div>
+                            `;
+                        }
+                        if (details.progressRating) {
+                            html += `
+                                <div class="moti-detail-section">
+                                    <div class="moti-detail-title">⭐ 進步星數</div>
+                                    <div class="moti-notes">${'⭐'.repeat(parseInt(details.progressRating) || 0)} (${details.progressRating}/5)</div>
+                                </div>
+                            `;
+                        }
+                    }
+                    
+                    // 回家作業
+                    if (details.homework || details.pi_homework) {
+                        const homework = details.homework || details.pi_homework;
+                        html += `
+                            <div class="moti-detail-section">
+                                <div class="moti-detail-title">📝 回家作業</div>
+                                <div class="moti-notes">${homework}</div>
+                            </div>
+                        `;
+                    }
+                    if (details.homeworkOther || details.pi_homeworkOther) {
+                        const homeworkOther = details.homeworkOther || details.pi_homeworkOther;
+                        html += `
+                            <div class="moti-detail-section">
+                                <div class="moti-detail-title">📝 其他回家作業</div>
+                                <div class="moti-notes">${homeworkOther}</div>
+                            </div>
+                        `;
+                    }
+                }
+            }
+            
+            // 學員狀況
+            let statusHtml = '';
+            if (item.mental_state_rating) {
+                statusHtml += `<div class="skeleton-item"><label>精神狀態</label><span>${'😊'.repeat(parseInt(item.mental_state_rating) || 0)} (${item.mental_state_rating}/10)</span></div>`;
+            }
+            if (item.incident_types && item.incident_types !== '無' && item.incident_types !== '') {
+                statusHtml += `<div class="skeleton-item"><label>發生狀況</label><span style="color: var(--pink-dark);">${item.incident_types}</span></div>`;
+            }
+            if (item.is_late) {
+                statusHtml += `<div class="skeleton-item"><label>遲到</label><span style="color: var(--pink-dark);">是</span></div>`;
+            }
+            
+            if (statusHtml) {
+                html += `
+                    <div class="moti-detail-section">
+                        <div class="moti-detail-title">👤 學員狀況</div>
+                        <div class="skeleton-list">${statusHtml}</div>
+                    </div>
+                `;
+            }
+            
+            return html;
+        }
+        
+        function toggleClassHistoryDetail(index) {
+            const container = document.getElementById('classHistoryTimelineContent');
+            const items = container.querySelectorAll('.moti-timeline-item');
+            const targetItem = container.querySelector(`.moti-timeline-item[data-index="${index}"]`);
+            
+            if (targetItem.classList.contains('active')) {
+                targetItem.classList.remove('active');
+            } else {
+                items.forEach(item => item.classList.remove('active'));
+                targetItem.classList.add('active');
             }
         }
         
