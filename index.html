@@ -3136,7 +3136,7 @@
             </div>
             
             <div class="form-group">
-                <label class="form-label">訓練間精神狀態</label>
+                <label class="form-label">課間狀態</label>
                 <div class="star-rating" data-name="mentalState" data-max="5">
                     <input type="hidden" name="mentalState" value="">
                     <span class="star" data-value="1"></span>
@@ -4560,10 +4560,10 @@
                 }
             }
             
-            // 學員狀況（精神狀態、發生狀況）
+            // 學員狀況（課間狀態、發生狀況）
             let statusHtml = '';
             if (item.mental_state_rating) {
-                statusHtml += `<div class="skeleton-item"><label>精神狀態</label><span>${item.mental_state_rating}/5</span></div>`;
+                statusHtml += `<div class="skeleton-item"><label>課間狀態</label><span>${item.mental_state_rating}/5</span></div>`;
             }
             if (item.incident_types && item.incident_types !== '無' && item.incident_types !== '') {
                 statusHtml += `<div class="skeleton-item"><label>發生狀況</label><span style="color: var(--pink-dark);">${item.incident_types}</span></div>`;
@@ -4899,13 +4899,13 @@
             // 根據課種收集訓練內容
             switch (coachClassType) {
                 case 'strength_training':
-                    data.trainingDetails = collectWeightTrainingData();
+                    data.trainingDetails = JSON.stringify(collectWeightTrainingData());
                     break;
                 case 'pilates':
-                    data.trainingDetails = collectPilatesTrainingData();
+                    data.trainingDetails = JSON.stringify(collectPilatesTrainingData());
                     break;
                 case 'stretching':
-                    data.trainingDetails = collectStretchData();
+                    data.trainingDetails = JSON.stringify(collectStretchData());
                     break;
             }
             
@@ -5208,7 +5208,7 @@
             
             // 重置學員狀況
             document.getElementById('isLate_no').checked = true;
-            // 重置精神狀態星數
+            // 重置課間狀態星數
             const mentalInput = document.querySelector('input[name="mentalState"]');
             if (mentalInput) {
                 mentalInput.value = '';
