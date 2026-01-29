@@ -3125,7 +3125,7 @@
                 <label class="form-label">學生是否遲到<span class="required">*</span></label>
                 <div class="radio-group">
                     <div class="radio-item">
-                        <input type="radio" name="isLate" id="isLate_no" value="no" checked>
+                        <input type="radio" name="isLate" id="isLate_no" value="no">
                         <label for="isLate_no">否</label>
                     </div>
                     <div class="radio-item">
@@ -3182,7 +3182,7 @@
                 <p style="font-size: 12px; color: var(--gray); margin-bottom: var(--spacing-sm);">如有新增疾病史、或其他過去未察覺情況</p>
                 <div class="radio-group">
                     <div class="radio-item">
-                        <input type="radio" name="needAdminFollowup" id="adminFollowup_no" value="no" checked>
+                        <input type="radio" name="needAdminFollowup" id="adminFollowup_no" value="no">
                         <label for="adminFollowup_no">否</label>
                     </div>
                     <div class="radio-item">
@@ -4470,14 +4470,16 @@
                 'stretching': '🤸 伸展'
             };
             
-            // 課程基本資訊
-            let html = `
+            let html = '';
+            
+            // 課程基本資訊（共用：日期、時間、教練）
+            html += `
                 <div class="moti-detail-section">
                     <div class="moti-detail-title">📋 課程資訊</div>
                     <div class="skeleton-list">
-                        <div class="skeleton-item"><label>課種</label><span>${classTypeNames[item.class_type] || item.class_type}</span></div>
+                        <div class="skeleton-item"><label>日期</label><span>${item.class_date || '-'}</span></div>
+                        <div class="skeleton-item"><label>時間</label><span>${item.class_time || '-'}</span></div>
                         <div class="skeleton-item"><label>教練</label><span>${item.coach_name || '-'}</span></div>
-                        <div class="skeleton-item"><label>課程長度</label><span>${item.duration_minutes || 60} 分鐘</span></div>
                         ${item.training_purpose ? `<div class="skeleton-item"><label>訓練目的</label><span>${item.training_purpose}</span></div>` : ''}
                     </div>
                 </div>
@@ -4493,11 +4495,11 @@
                 }
                 
                 if (details) {
+                    // 重訓
                     if (item.class_type === 'strength_training' && details.exercises) {
-                        // 重訓動作
                         html += `
                             <div class="moti-detail-section">
-                                <div class="moti-detail-title">🏋️ 訓練動作</div>
+                                <div class="moti-detail-title">🏋️ 訓練內容</div>
                                 <div class="skeleton-list">
                         `;
                         details.exercises.forEach((ex, i) => {
@@ -4505,43 +4507,27 @@
                             html += `<div class="skeleton-item"><label>${i+1}. ${ex.name || '-'}</label><span>${ex.equipment || ''} ${setsInfo}</span></div>`;
                         });
                         html += `</div></div>`;
-                        
-                        // 進步星數
-                        if (details.progressRating) {
-                            html += `
-                                <div class="moti-detail-section">
-                                    <div class="moti-detail-title">⭐ 進步星數</div>
-                                    <div class="moti-notes">${'⭐'.repeat(parseInt(details.progressRating) || 0)} (${details.progressRating}/5)</div>
-                                </div>
-                            `;
-                        }
-                    } else if (item.class_type === 'pilates' && details.pi_movements) {
-                        // 皮拉提斯動作
+                    }
+                    
+                    // 皮拉提斯
+                    if (item.class_type === 'pilates' && details.pi_movements) {
                         html += `
                             <div class="moti-detail-section">
-                                <div class="moti-detail-title">🧘 訓練動作</div>
+                                <div class="moti-detail-title">🧘 訓練內容</div>
                                 <div class="skeleton-list">
                         `;
                         details.pi_movements.forEach((mv, i) => {
                             html += `<div class="skeleton-item"><label>${i+1}. ${mv.name || '-'}</label><span>${mv.pi_equipment || ''} ${mv.reps || ''}下 ${mv.sets || ''}組</span></div>`;
                         });
                         html += `</div></div>`;
-                        
-                        // 進步啞鈴
-                        if (details.pi_progressRating) {
-                            html += `
-                                <div class="moti-detail-section">
-                                    <div class="moti-detail-title">🏅 進步啞鈴</div>
-                                    <div class="moti-notes">${'🏋️'.repeat(parseInt(details.pi_progressRating) || 0)} (${details.pi_progressRating}/5)</div>
-                                </div>
-                            `;
-                        }
-                    } else if (item.class_type === 'stretching') {
-                        // 伸展
+                    }
+                    
+                    // 伸展 - 主訴部位和延伸部位
+                    if (item.class_type === 'stretching') {
                         if (details.mainComplaint) {
                             html += `
                                 <div class="moti-detail-section">
-                                    <div class="moti-detail-title">📍 主訴部位</div>
+                                    <div class="moti-detail-title">📍 當堂課程主訴</div>
                                     <div class="moti-notes">${details.mainComplaint}</div>
                                 </div>
                             `;
@@ -4562,48 +4548,17 @@
                                 </div>
                             `;
                         }
-                        if (details.progressRating) {
-                            html += `
-                                <div class="moti-detail-section">
-                                    <div class="moti-detail-title">⭐ 進步星數</div>
-                                    <div class="moti-notes">${'⭐'.repeat(parseInt(details.progressRating) || 0)} (${details.progressRating}/5)</div>
-                                </div>
-                            `;
-                        }
-                    }
-                    
-                    // 回家作業
-                    if (details.homework || details.pi_homework) {
-                        const homework = details.homework || details.pi_homework;
-                        html += `
-                            <div class="moti-detail-section">
-                                <div class="moti-detail-title">📝 回家作業</div>
-                                <div class="moti-notes">${homework}</div>
-                            </div>
-                        `;
-                    }
-                    if (details.homeworkOther || details.pi_homeworkOther) {
-                        const homeworkOther = details.homeworkOther || details.pi_homeworkOther;
-                        html += `
-                            <div class="moti-detail-section">
-                                <div class="moti-detail-title">📝 其他回家作業</div>
-                                <div class="moti-notes">${homeworkOther}</div>
-                            </div>
-                        `;
                     }
                 }
             }
             
-            // 學員狀況
+            // 學員狀況（精神狀態、發生狀況）
             let statusHtml = '';
             if (item.mental_state_rating) {
-                statusHtml += `<div class="skeleton-item"><label>精神狀態</label><span>${'😊'.repeat(parseInt(item.mental_state_rating) || 0)} (${item.mental_state_rating}/10)</span></div>`;
+                statusHtml += `<div class="skeleton-item"><label>精神狀態</label><span>${item.mental_state_rating}/10</span></div>`;
             }
             if (item.incident_types && item.incident_types !== '無' && item.incident_types !== '') {
                 statusHtml += `<div class="skeleton-item"><label>發生狀況</label><span style="color: var(--pink-dark);">${item.incident_types}</span></div>`;
-            }
-            if (item.is_late) {
-                statusHtml += `<div class="skeleton-item"><label>遲到</label><span style="color: var(--pink-dark);">是</span></div>`;
             }
             
             if (statusHtml) {
