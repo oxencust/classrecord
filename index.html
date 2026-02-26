@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>衡點健身 - 教練課表寫入系統</title>
+    <title>衡點健康 - 教練課表寫入系統</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
@@ -724,7 +724,7 @@
             display: block;
         }
         
-        /* 課堂照片上傳 */
+        /* 課表紀錄上傳 */
         .photo-upload-area {
             padding: var(--spacing-md);
         }
@@ -2946,11 +2946,11 @@
             </div>
         </section>
         
-        <!-- 課堂照片 -->
+        <!-- 課表紀錄 -->
         <section class="card" id="photoSection">
             <div class="card-header">
                 <div class="card-icon blue">📷</div>
-                <div class="card-title">課堂照片</div>
+                <div class="card-title">課表紀錄</div>
             </div>
             
             <div class="photo-upload-area">
@@ -3324,9 +3324,9 @@
         const CONFIG = {
             LIFF_ID: '2008660081-HNJwwfe6', // 請替換為實際的 LIFF ID
             WEBHOOK_URL: 'https://hook.us2.make.com/9ydnn20drmcegfl5cvm9e3tqqb37azir', // Make.com Webhook URL
-            DEBUG_MODE: false, // 設為 false 則需要 LIFF 登入
+            DEBUG_MODE: true, // 設為 false 則需要 LIFF 登入
             
-            // ImageKit 設定（課堂照片上傳）
+            // ImageKit 設定（課表紀錄上傳）
             IMAGEKIT_AUTH_URL: 'https://script.google.com/macros/s/AKfycbyoVmFxHHtH8xnHlvUVrADYOepAywFyTLh9GSql8LMiahIdgxNMedrI0elfT1yDr2Fw/exec', // Apps Script URL（取得簽名）
             IMAGEKIT_PUBLIC_KEY: 'public_tS8YfdCMhUonkM8VMZ+cCg71SHw=', // ImageKit Public Key
             IMAGEKIT_URL_ENDPOINT: 'https://ik.imagekit.io/hanhealth/', // ImageKit URL Endpoint
@@ -3724,6 +3724,10 @@
             searchInput.placeholder = '已選擇學員';
             document.getElementById('searchClear').classList.remove('show');
             
+            // 選擇新學員時清空已上傳的照片
+            photoFiles = [];
+            renderPhotoPreview();
+            
             // 載入會員完整資料
             await loadMemberDetails(member.id);
         }
@@ -3844,10 +3848,14 @@
             searchInput.placeholder = '輸入學員姓名或編號...';
             
             document.getElementById('memberInfoCard').classList.remove('show');
+            
+            // 清空已上傳的照片
+            photoFiles = [];
+            renderPhotoPreview();
         }
         
         // ============================================
-        // 課堂照片上傳（ImageKit）
+        // 課表紀錄上傳（ImageKit）
         // ============================================
         let uploadedPhotos = []; // 儲存 ImageKit URL
         let photoFiles = []; // 暫存原始檔案
@@ -3963,7 +3971,7 @@
             return result.url;
         }
         
-        // 上傳所有課堂照片
+        // 上傳所有課表紀錄
         async function uploadAllClassPhotos() {
             if (photoFiles.length === 0) return [];
             
@@ -4738,7 +4746,7 @@
             
             let html = '';
             
-            // 課堂照片（逗號分隔的 URL）
+            // 課表紀錄（逗號分隔的 URL）
             if (item.photos && item.photos.trim() !== '') {
                 const photos = item.photos.split(',').map(url => url.trim()).filter(url => url);
                 
@@ -4750,7 +4758,7 @@
                         <div class="moti-detail-section">
                             <div class="moti-image-section">
                                 <div class="moti-image-container">
-                                    <img src="${firstPhoto}" alt="課堂照片" onclick="openLightbox(this.src)" onerror="this.style.display='none'">
+                                    <img src="${firstPhoto}" alt="課表紀錄" onclick="openLightbox(this.src)" onerror="this.style.display='none'">
                                 </div>
                                 <a href="${albumUrl}" target="_blank" class="album-link-btn">
                                     📷 查看全部照片 (${photos.length}張)
@@ -5174,7 +5182,7 @@
                 classType: coachClassType,
                 trainingPurpose: document.getElementById('trainingPurpose').value,
                 
-                // 課堂照片 URL（逗號分隔）
+                // 課表紀錄 URL（逗號分隔）
                 photos: photoUrls.join(','),
                 
                 // 學員當日狀況
@@ -5472,7 +5480,7 @@
             // 重置會員選擇
             clearSelectedMember();
             
-            // 重置課堂照片
+            // 重置課表紀錄
             photoFiles = [];
             renderPhotoPreview();
             
