@@ -3696,7 +3696,7 @@ if (data.success && data.members) {
         
         const birthday = formatBirthday(member.birthday);
         return `
-            <div class="search-result-item" onclick='selectMember(...)'>
+            <div class="search-result-item" onclick='selectMember(${JSON.stringify(member).replace(/'/g, "&#39;")})'>
                 <span class="member-id">${id}</span>
                 <span class="member-name">${name}</span>
                 <span class="member-birthday">(${birthday})</span>
