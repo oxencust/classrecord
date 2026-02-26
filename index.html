@@ -3536,11 +3536,15 @@
             const searchResults = document.getElementById('searchResults');
             const searchClear = document.getElementById('searchClear');
             
-            // 輸入時只顯示/隱藏清除按鈕（不自動搜尋）
-            searchInput.addEventListener('input', function() {
-                const query = this.value.trim();
-                searchClear.classList.toggle('show', query.length > 0);
-            });
+            // 輸入時清除舊的搜尋結果
+searchInput.addEventListener('input', function() {
+    const query = this.value.trim();
+    searchClear.classList.toggle('show', query.length > 0);
+    
+    // 清除之前的搜尋結果
+    searchResults.innerHTML = '';
+    searchResults.classList.remove('show');
+});
             
             // 按 Enter 觸發搜尋
             searchInput.addEventListener('keydown', function(e) {
@@ -3557,12 +3561,13 @@
                 }
             });
             
-            // 焦點時顯示結果（如果有內容）
-            searchInput.addEventListener('focus', function() {
-                if (searchResults.innerHTML && searchResults.innerHTML.trim() !== '') {
-                    searchResults.classList.add('show');
-                }
-            });
+            // 焦點時顯示結果（只有有效的搜尋結果才顯示）
+searchInput.addEventListener('focus', function() {
+    // 只有當有搜尋結果項目時才顯示（不是「找不到」或「錯誤」訊息）
+    if (searchResults.querySelector('.search-result-item')) {
+        searchResults.classList.add('show');
+    }
+});
             
             // 伸展課程時長選擇
             document.querySelectorAll('.duration-btn').forEach(btn => {
@@ -3673,26 +3678,37 @@
                     });
                     
                     const data = await response.json();
-                    if (data.success) {
-                        members = data.members;
-                    }
+if (data.success && data.members) {
+    // 過濾掉無效資料（id 或 name 為 null/空）
+    members = data.members.filter(m => m && m.id && m.name);
+}
                 }
                 
                 // 顯示結果
                 if (members.length === 0) {
-                    searchResults.innerHTML = '<div class="search-no-result">找不到符合的學員</div>';
-                } else {
-                    searchResults.innerHTML = members.map(member => {
-                        const birthday = formatBirthday(member.birthday);
-                        return `
-                            <div class="search-result-item" onclick='selectMember(${JSON.stringify(member).replace(/'/g, "&#39;")})'>
-                                <span class="member-id">${member.id}</span>
-                                <span class="member-name">${member.name}</span>
-                                <span class="member-birthday">(${birthday})</span>
-                            </div>
-                        `;
-                    }).join('');
-                }
+    searchResults.innerHTML = '<div class="search-no-result">找不到符合的學員</div>';
+} else {
+    searchResults.innerHTML = members.map(member => {
+        // 安全檢查
+        const id = member.id || '';
+        const name = member.name || '';
+        if (!id || !name) return ''; // 跳過無效資料
+        
+        const birthday = formatBirthday(member.birthday);
+        return `
+            <div class="search-result-item" onclick='selectMember(...)'>
+                <span class="member-id">${id}</span>
+                <span class="member-name">${name}</span>
+                <span class="member-birthday">(${birthday})</span>
+            </div>
+        `;
+    }).filter(html => html).join('');
+    
+    // 如果過濾後沒有有效結果
+    if (!searchResults.innerHTML.trim()) {
+        searchResults.innerHTML = '<div class="search-no-result">找不到符合的學員</div>';
+    }
+}
                 
             } catch (error) {
                 console.error('搜尋失敗:', error);
