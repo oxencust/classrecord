@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>衡點健康 - 教練課表寫入系統</title>
+    <title>衡點健身 - 教練課表寫入系統</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
@@ -722,6 +722,94 @@
         
         .modal-tab-content.active {
             display: block;
+        }
+        
+        /* 課堂照片上傳 */
+        .photo-upload-area {
+            padding: var(--spacing-md);
+        }
+        
+        .photo-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .photo-preview-item {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 2px solid var(--gray-light);
+        }
+        
+        .photo-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .photo-preview-item .delete-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .photo-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .photo-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border: 2px dashed var(--gray-light);
+            border-radius: var(--radius-md);
+            background: var(--gray-bg);
+            color: var(--gray);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .photo-btn:hover {
+            border-color: var(--green);
+            color: var(--green);
+            background: var(--green-light);
+        }
+        
+        .photo-btn.upload span {
+            font-size: 18px;
+        }
+        
+        .photo-btn.camera span {
+            font-size: 18px;
+        }
+        
+        .photo-hint {
+            font-size: 12px;
+            color: var(--gray);
+            text-align: center;
+            margin: 0;
         }
         
         /* 課種篩選列 */
@@ -2765,7 +2853,7 @@
                 <!-- MOTI 檢測歷程按鈕 -->
                 <button type="button" class="moti-history-btn" onclick="openMotiModal()">
                     <span class="moti-icon">📊</span>
-                    <span>查看 MOTI / InBody / 課表 歷程</span>
+                    <span>查看 MOTI / InBody 歷程</span>
                     <span class="moti-arrow">›</span>
                 </button>
             </div>
@@ -2855,6 +2943,29 @@
                     <label class="form-label">課程時間<span class="required">*</span></label>
                     <input type="time" class="form-input" id="classTime">
                 </div>
+            </div>
+        </section>
+        
+        <!-- 課堂照片 -->
+        <section class="card" id="photoSection">
+            <div class="card-header">
+                <div class="card-icon blue">📷</div>
+                <div class="card-title">課堂照片</div>
+            </div>
+            
+            <div class="photo-upload-area">
+                <div class="photo-preview-container" id="photoPreviewContainer"></div>
+                <div class="photo-buttons">
+                    <label class="photo-btn upload">
+                        <input type="file" accept="image/*" multiple id="photoUpload" onchange="handlePhotoUpload(event)" style="display: none;">
+                        <span>📁</span> 上傳照片
+                    </label>
+                    <label class="photo-btn camera">
+                        <input type="file" accept="image/*" capture="environment" id="photoCapture" onchange="handlePhotoCapture(event)" style="display: none;">
+                        <span>📸</span> 拍照
+                    </label>
+                </div>
+                <p class="photo-hint">可上傳多張照片，點擊照片可刪除</p>
             </div>
         </section>
         
@@ -3213,7 +3324,16 @@
         const CONFIG = {
             LIFF_ID: '2008660081-HNJwwfe6', // 請替換為實際的 LIFF ID
             WEBHOOK_URL: 'https://hook.us2.make.com/9ydnn20drmcegfl5cvm9e3tqqb37azir', // Make.com Webhook URL
-            DEBUG_MODE: false // 設為 false 則需要 LIFF 登入
+            DEBUG_MODE: true, // 設為 false 則需要 LIFF 登入
+            
+            // ImageKit 設定（課堂照片上傳）
+            IMAGEKIT_AUTH_URL: 'https://script.google.com/macros/s/AKfycbyoVmFxHHtH8xnHlvUVrADYOepAywFyTLh9GSql8LMiahIdgxNMedrI0elfT1yDr2Fw/exec', // Apps Script URL（取得簽名）
+            IMAGEKIT_PUBLIC_KEY: 'public_tS8YfdCMhUonkM8VMZ+cCg71SHw=', // ImageKit Public Key
+            IMAGEKIT_URL_ENDPOINT: 'https://ik.imagekit.io/hanhealth/', // ImageKit URL Endpoint
+            
+            // 圖片壓縮設定
+            MAX_IMAGE_WIDTH: 1200,
+            IMAGE_QUALITY: 0.7
         };
         
         // ============================================
@@ -3724,6 +3844,152 @@
             searchInput.placeholder = '輸入學員姓名或編號...';
             
             document.getElementById('memberInfoCard').classList.remove('show');
+        }
+        
+        // ============================================
+        // 課堂照片上傳（ImageKit）
+        // ============================================
+        let uploadedPhotos = []; // 儲存 ImageKit URL
+        let photoFiles = []; // 暫存原始檔案
+        
+        function handlePhotoUpload(event) {
+            const files = event.target.files;
+            addPhotoFiles(files);
+            event.target.value = ''; // 清空以便再次選擇
+        }
+        
+        function handlePhotoCapture(event) {
+            const files = event.target.files;
+            addPhotoFiles(files);
+            event.target.value = '';
+        }
+        
+        function addPhotoFiles(files) {
+            Array.from(files).forEach(file => {
+                if (!file.type.startsWith('image/')) return;
+                
+                // 壓縮並預覽
+                compressImageFile(file, (compressedFile, previewUrl) => {
+                    photoFiles.push(compressedFile);
+                    renderPhotoPreview();
+                });
+            });
+        }
+        
+        function compressImageFile(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const maxSize = CONFIG.MAX_IMAGE_WIDTH;
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > height && width > maxSize) {
+                        height = (height * maxSize) / width;
+                        width = maxSize;
+                    } else if (height > maxSize) {
+                        width = (width * maxSize) / height;
+                        height = maxSize;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    canvas.toBlob(function(blob) {
+                        const compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
+                        const previewUrl = canvas.toDataURL('image/jpeg', CONFIG.IMAGE_QUALITY);
+                        callback(compressedFile, previewUrl);
+                    }, 'image/jpeg', CONFIG.IMAGE_QUALITY);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function renderPhotoPreview() {
+            const container = document.getElementById('photoPreviewContainer');
+            
+            // 為每個檔案生成預覽
+            const previews = photoFiles.map((file, index) => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve({ index, url: e.target.result });
+                    reader.readAsDataURL(file);
+                });
+            });
+            
+            Promise.all(previews).then(results => {
+                container.innerHTML = results.map(({ index, url }) => `
+                    <div class="photo-preview-item">
+                        <img src="${url}" alt="照片 ${index + 1}">
+                        <button type="button" class="delete-btn" onclick="deletePhoto(${index})">✕</button>
+                    </div>
+                `).join('');
+            });
+        }
+        
+        function deletePhoto(index) {
+            photoFiles.splice(index, 1);
+            renderPhotoPreview();
+        }
+        
+        // 上傳單張圖片到 ImageKit
+        async function uploadToImageKit(file, folder) {
+            // 從 Apps Script 取得簽名
+            const authResponse = await fetch(CONFIG.IMAGEKIT_AUTH_URL);
+            const auth = await authResponse.json();
+            
+            // 上傳圖片到 ImageKit
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('publicKey', CONFIG.IMAGEKIT_PUBLIC_KEY);
+            formData.append('signature', auth.signature);
+            formData.append('expire', auth.expire);
+            formData.append('token', auth.token);
+            formData.append('folder', folder);
+            formData.append('fileName', Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_'));
+            
+            const uploadResponse = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await uploadResponse.json();
+            return result.url;
+        }
+        
+        // 上傳所有課堂照片
+        async function uploadAllClassPhotos() {
+            if (photoFiles.length === 0) return [];
+            
+            const memberId = selectedMember?.id || 'unknown';
+            const memberName = selectedMember?.name || 'unknown';
+            const classDate = document.getElementById('classDate').value;
+            
+            const folderName = memberId + '_' + memberName;
+            const folder = 'class/' + folderName + '/' + classDate;
+            
+            const urls = [];
+            
+            // 顯示上傳進度
+            showToast(`正在上傳照片 0/${photoFiles.length}...`, 'info');
+            
+            for (let i = 0; i < photoFiles.length; i++) {
+                try {
+                    const url = await uploadToImageKit(photoFiles[i], folder);
+                    urls.push(url);
+                    showToast(`正在上傳照片 ${i + 1}/${photoFiles.length}...`, 'info');
+                } catch (error) {
+                    console.error('Photo upload error:', error);
+                }
+            }
+            
+            return urls;
         }
         
         // ============================================
@@ -4472,6 +4738,29 @@
             
             let html = '';
             
+            // 課堂照片（逗號分隔的 URL）
+            if (item.photos && item.photos.trim() !== '') {
+                const photos = item.photos.split(',').map(url => url.trim()).filter(url => url);
+                
+                if (photos.length > 0) {
+                    const firstPhoto = photos[0];
+                    const albumUrl = `https://oxencust.github.io/class-album/?id=${item.id}`;
+                    
+                    html += `
+                        <div class="moti-detail-section">
+                            <div class="moti-image-section">
+                                <div class="moti-image-container">
+                                    <img src="${firstPhoto}" alt="課堂照片" onclick="openLightbox(this.src)" onerror="this.style.display='none'">
+                                </div>
+                                <a href="${albumUrl}" target="_blank" class="album-link-btn">
+                                    📷 查看全部照片 (${photos.length}張)
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
             // 課程基本資訊（共用：日期、時間、教練）
             html += `
                 <div class="moti-detail-section">
@@ -4873,7 +5162,7 @@
         // ============================================
         // 資料收集與提交
         // ============================================
-        function collectFormData() {
+        function collectFormData(photoUrls) {
             const data = {
                 // 基本資訊
                 coachId: currentCoach?.id,
@@ -4884,6 +5173,9 @@
                 classTime: document.getElementById('classTime').value,
                 classType: coachClassType,
                 trainingPurpose: document.getElementById('trainingPurpose').value,
+                
+                // 課堂照片 URL（逗號分隔）
+                photos: photoUrls.join(','),
                 
                 // 學員當日狀況
                 isLate: document.querySelector('input[name="isLate"]:checked')?.value === 'yes',
@@ -5123,7 +5415,15 @@
             submitBtn.textContent = '提交中...';
             
             try {
-                const formData = collectFormData();
+                // 先上傳照片到 ImageKit
+                let photoUrls = [];
+                if (photoFiles.length > 0) {
+                    submitBtn.textContent = '上傳照片中...';
+                    photoUrls = await uploadAllClassPhotos();
+                }
+                
+                submitBtn.textContent = '提交資料中...';
+                const formData = collectFormData(photoUrls);
                 console.log('提交資料:', formData);
                 
                 if (CONFIG.DEBUG_MODE) {
@@ -5144,6 +5444,10 @@
                     
                     if (result.success) {
                         showToast('課表紀錄已成功提交！', 'success');
+                        
+                        // 清空照片
+                        photoFiles = [];
+                        renderPhotoPreview();
                         
                         // 可選：關閉 LIFF
                         // if (liff.isInClient()) liff.closeWindow();
@@ -5167,6 +5471,10 @@
             
             // 重置會員選擇
             clearSelectedMember();
+            
+            // 重置課堂照片
+            photoFiles = [];
+            renderPhotoPreview();
             
             // 重置訓練目的
             document.getElementById('trainingPurpose').value = '';
