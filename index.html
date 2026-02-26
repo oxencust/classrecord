@@ -3803,7 +3803,7 @@ if (data.success && data.members) {
             // 顯示會員資訊卡
             document.getElementById('memberIdDisplay').textContent = member.id;
             document.getElementById('memberName').textContent = member.name;
-            document.getElementById('memberGender').textContent = member.gender === 'male' ? '男' : '女';
+            document.getElementById('memberGender').textContent = (member.gender === 'male' || member.gender === '男') ? '男' : '女';
             
             // 計算年齡並顯示生日
             if (member.birthday) {
